@@ -27,25 +27,35 @@ app.use(
   })
 );
 
-// ✅ Define Mongoose Schema
+// ✅ MongoDB Connection
+mongoose
+  .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
+
+// ✅ Define Mongoose Schema (Move this **above** the model declaration)
 const SummarySchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   filename: String,
   text: String,
   summary: String,
+  questions: [{ question: String, answer: String }], // ✅ Store questions
   createdAt: { type: Date, default: Date.now },
 });
 
-const Summary = mongoose.model("Summary", SummarySchema);
+const Summary = mongoose.model("Summary", SummarySchema); // ✅ Now this works
 
 // ✅ Initialize OpenAI
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY, // Make sure your `.env` file has the API key
+  apiKey: process.env.OPENAI_API_KEY, // Ensure `.env` has the API key
 });
 
 // ✅ Summarization Route
 app.post("/summarize", async (req, res) => {
   const { text } = req.body;
+  const userId = req.session.user?._id;
   if (!text) return res.status(400).json({ error: "No text provided" });
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   try {
     const response = await openai.chat.completions.create({
@@ -57,9 +67,9 @@ app.post("/summarize", async (req, res) => {
 
     if (response.choices?.length > 0) {
       const summary = response.choices[0].message.content.trim();
-      const newSummary = new Summary({ text, summary });
+      const newSummary = new Summary({ userId, text, summary });
       await newSummary.save(); // ✅ Save summary to MongoDB
-      res.json({ summary });
+      res.json({ summary, summaryId: newSummary._id });
     } else {
       throw new Error("Empty response from OpenAI");
     }
@@ -71,9 +81,10 @@ app.post("/summarize", async (req, res) => {
 
 // ✅ Generate Practice Questions Route
 app.post("/generate-questions", async (req, res) => {
-  const { summary } = req.body;
-
-  if (!summary) return res.status(400).json({ error: "No summary provided" });
+  const { summaryId, summary } = req.body;
+  const userId = req.session.user?._id;
+  if (!summaryId || !summary) return res.status(400).json({ error: "No summary provided" });
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   try {
     const response = await openai.chat.completions.create({
@@ -84,29 +95,23 @@ app.post("/generate-questions", async (req, res) => {
     });
 
     const questionsText = response.choices[0].message.content;
-    console.log("🔍 Raw OpenAI Response:", questionsText);
-
-    // ✅ Extracting Questions Properly
     const questionPattern = /Q\d+:\s(.+?)\nA:\s(.+?)(?:\n|$)/g;
     let match;
     let questions = [];
 
     while ((match = questionPattern.exec(questionsText)) !== null) {
-      questions.push({
-        question: match[1].trim(),
-        answer: match[2].trim(),
-      });
+      questions.push({ question: match[1].trim(), answer: match[2].trim() });
     }
 
-    if (questions.length === 0) {
-      throw new Error("No valid questions extracted");
-    }
+    if (questions.length === 0) throw new Error("No valid questions extracted");
 
-    console.log("✅ Processed Questions:", questions);
+    // ✅ Update summary with generated questions
+    await Summary.findByIdAndUpdate(summaryId, { questions });
+
     res.json({ questions });
   } catch (error) {
     console.error("❌ Question Generation Error:", error);
-    res.status(500).json({ error: "Question generation failed.", details: error.message });
+    res.status(500).json({ error: "Question generation failed." });
   }
 });
 
@@ -115,11 +120,13 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 app.post("/upload", upload.single("pdf"), async (req, res) => {
+  const userId = req.session.user?._id;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
   try {
     const data = await pdfParse(req.file.buffer);
-    const newSummary = new Summary({ filename: req.file.originalname, text: data.text });
+    const newSummary = new Summary({ userId, filename: req.file.originalname, text: data.text });
     await newSummary.save(); // ✅ Save uploaded text to MongoDB
     res.json({ text: data.text.trim() });
   } catch (error) {
@@ -128,10 +135,13 @@ app.post("/upload", upload.single("pdf"), async (req, res) => {
   }
 });
 
-// ✅ Fetch All Summaries
+// ✅ Fetch User's Summaries
 app.get("/summaries", async (req, res) => {
+  const userId = req.session.user?._id;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
   try {
-    const summaries = await Summary.find().sort({ createdAt: -1 }); // ✅ Sort newest first
+    const summaries = await Summary.find({ userId }).sort({ createdAt: -1 });
     res.json(summaries);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch summaries." });
@@ -140,35 +150,26 @@ app.get("/summaries", async (req, res) => {
 
 // ✅ Delete a Summary
 app.delete("/summaries/:id", async (req, res) => {
+  const userId = req.session.user?._id;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
   try {
     const { id } = req.params;
-    await Summary.findByIdAndDelete(id);
+    await Summary.findOneAndDelete({ _id: id, userId });
     res.json({ success: true, message: "Summary deleted successfully." });
   } catch (error) {
     res.status(500).json({ error: "Failed to delete summary." });
   }
 });
 
-// ✅ MongoDB Connection
-mongoose
-  .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
-
 // ✅ User Registration Route
 app.post("/register", async (req, res) => {
-  console.log("Register Request Body:", req.body); // Debugging
-
   try {
     const { username, password } = req.body;
-    if (!username || !password) {
-      return res.status(400).json({ error: "Username and password are required." });
-    }
+    if (!username || !password) return res.status(400).json({ error: "Username and password required." });
 
     const existingUser = await User.findOne({ username });
-    if (existingUser) {
-      return res.status(400).json({ error: "Username already exists." });
-    }
+    if (existingUser) return res.status(400).json({ error: "Username already exists." });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({ username, password: hashedPassword });
@@ -176,52 +177,31 @@ app.post("/register", async (req, res) => {
 
     res.status(201).json({ message: "User registered successfully." });
   } catch (error) {
-    console.error("❌ Registration Error:", error);
     res.status(500).json({ error: "Registration failed." });
   }
 });
 
 // ✅ User Login Route
 app.post("/login", async (req, res) => {
-  console.log("Login Request Body:", req.body); // Debugging
-
   try {
     const { username, password } = req.body;
-    if (!username || !password) {
-      return res.status(400).json({ error: "Username and password are required." });
-    }
-
     const user = await User.findOne({ username });
+
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(400).json({ error: "Invalid username or password" });
     }
 
-    // ✅ Save user session
     req.session.user = { _id: user._id, username: user.username };
-
     res.json({ user: req.session.user });
   } catch (error) {
-    console.error("❌ Login Error:", error);
     res.status(500).json({ error: "Login failed." });
   }
 });
 
-// ✅ User Session Route (to check if logged in)
-app.get("/me", (req, res) => {
-  if (req.session.user) {
-    return res.json({ user: req.session.user });
-  }
-  res.status(401).json({ error: "Not authenticated" });
-});
-
 // ✅ Logout Route
 app.post("/logout", (req, res) => {
-  res.clearCookie("connect.sid"); // Clears session cookie
-  req.session?.destroy(() => {
-    res.status(200).json({ message: "Logged out successfully" });
-  });
+  req.session.destroy(() => res.json({ message: "Logged out successfully" }));
 });
-
 
 // ✅ Start the Server
 app.listen(PORT, () => console.log(`🔥 Server running on http://localhost:${PORT}`));
