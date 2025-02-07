@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+}
+/* Hide scrollbar track (backdrop) */
+::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+/* Style scrollbar thumb */
+::-webkit-scrollbar-thumb {
+  background: #9ca3af !important; /* Light gray */
+  border-radius: 4px !important;
+}
+
+/* Make the scrollbar thinner */
+::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+/* Firefox-specific scrollbar styling */
+* {
+  scrollbar-width: thin !important;
+  scrollbar-color: #9ca3af transparent !important;
+}
+
+/* Dark Mode */
+.dark ::-webkit-scrollbar-thumb {
+  background: #4b5563 !important; /* Dark gray */
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #6b7280 !important; /* Lighter gray */
+}
+
+/* Disable resize handle */
+textarea {
+  resize: none !important;
+}
+
+/* Remove spinners for Edge, Chrome, and Safari */
+textarea::-webkit-outer-spin-button,
+textarea::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Remove spinners for Firefox */
+textarea {
+  -moz-appearance: none;
+}
+
+/* Remove Edge’s scrollbar enhancements */
+textarea::-ms-clear,
+textarea::-ms-reveal {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Ensure input looks normal */
+textarea {
+  appearance: none;
+}
+
+

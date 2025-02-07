@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+textarea::-webkit-scrollbar {
+  width: 100px;
+}
+
