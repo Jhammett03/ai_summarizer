@@ -1,25 +1,31 @@
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+const bcrypt = require("bcrypt");
 const OpenAI = require("openai");
 const multer = require("multer");
 const pdfParse = require("pdf-parse");
 const mongoose = require("mongoose");
+const session = require("express-session");
+const User = require("./models/User");
 require("dotenv").config();
 
-// ✅ Initialize Express
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // ✅ Middleware
-app.use(cors({ origin: "*", credentials: true }));
+app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 app.use(bodyParser.json());
 
-// ✅ Connect to MongoDB
-mongoose
-  .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
+// ✅ Enable sessions
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "your-secret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false, httpOnly: true },
+  })
+);
 
 // ✅ Define Mongoose Schema
 const SummarySchema = new mongoose.Schema({
@@ -142,6 +148,80 @@ app.delete("/summaries/:id", async (req, res) => {
     res.status(500).json({ error: "Failed to delete summary." });
   }
 });
+
+// ✅ MongoDB Connection
+mongoose
+  .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
+
+// ✅ User Registration Route
+app.post("/register", async (req, res) => {
+  console.log("Register Request Body:", req.body); // Debugging
+
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: "Username and password are required." });
+    }
+
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      return res.status(400).json({ error: "Username already exists." });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({ username, password: hashedPassword });
+    await newUser.save();
+
+    res.status(201).json({ message: "User registered successfully." });
+  } catch (error) {
+    console.error("❌ Registration Error:", error);
+    res.status(500).json({ error: "Registration failed." });
+  }
+});
+
+// ✅ User Login Route
+app.post("/login", async (req, res) => {
+  console.log("Login Request Body:", req.body); // Debugging
+
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: "Username and password are required." });
+    }
+
+    const user = await User.findOne({ username });
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(400).json({ error: "Invalid username or password" });
+    }
+
+    // ✅ Save user session
+    req.session.user = { _id: user._id, username: user.username };
+
+    res.json({ user: req.session.user });
+  } catch (error) {
+    console.error("❌ Login Error:", error);
+    res.status(500).json({ error: "Login failed." });
+  }
+});
+
+// ✅ User Session Route (to check if logged in)
+app.get("/me", (req, res) => {
+  if (req.session.user) {
+    return res.json({ user: req.session.user });
+  }
+  res.status(401).json({ error: "Not authenticated" });
+});
+
+// ✅ Logout Route
+app.post("/logout", (req, res) => {
+  res.clearCookie("connect.sid"); // Clears session cookie
+  req.session?.destroy(() => {
+    res.status(200).json({ message: "Logged out successfully" });
+  });
+});
+
 
 // ✅ Start the Server
 app.listen(PORT, () => console.log(`🔥 Server running on http://localhost:${PORT}`));
