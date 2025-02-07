@@ -8,8 +8,8 @@ const Navbar = ({ darkMode, toggleDarkMode }) => {
         <h1 className="text-2xl font-bold">AI Summarizer</h1>
 
         {/* Dark Mode Toggle Button */}
-        <button onClick={toggleDarkMode} className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700">
-          {darkMode ? <SunIcon className="w-6 h-6 text-yellow-400" /> : <MoonIcon className="w-6 h-6 text-gray-700" />}
+        <button onClick={toggleDarkMode} className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ">
+          {darkMode ? <SunIcon className="w-6 h-6 text-yellow-400" /> : <MoonIcon className="w-6 h-6 text-gray-300" />}
         </button>
       </div>
     </nav>
