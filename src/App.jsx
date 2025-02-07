@@ -1,22 +1,48 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import axios from "axios"; // ✅ Make sure axios is imported
+import axios from "axios";
 import Navbar from "./components/Navbar";
 
 export default function App() {
   const [text, setText] = useState("");
   const [summary, setSummary] = useState("");
-  const [questions, setQuestions] = useState([]); // ✅ Holds questions
+  const [questions, setQuestions] = useState([]);
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const [error, setError] = useState("");
   const [darkMode, setDarkMode] = useState(true);
   const [file, setFile] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(false); // ✅ Collapsible history menu
 
   const toggleDarkMode = () => setDarkMode(!darkMode);
   const MAX_CHARACTERS = 12000;
 
-  // ✅ Summarization Request
+  // ✅ Fetch past summaries
+  const fetchHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const response = await axios.get("http://localhost:5000/summaries");
+      setHistory(response.data);
+    } catch (err) {
+      setError("Failed to load history.");
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  // ✅ Delete a saved summary
+  const handleDeleteSummary = async (id) => {
+    try {
+      await axios.delete(`http://localhost:5000/summaries/${id}`);
+      setHistory(history.filter((entry) => entry._id !== id)); // ✅ Update history state
+    } catch (err) {
+      setError("Failed to delete summary.");
+    }
+  };
+
+  // ✅ Summarize text
   const handleSummarize = async () => {
     if (!text) return setError("Please enter text to summarize.");
     if (text.length > MAX_CHARACTERS) return setError(`Text exceeds ${MAX_CHARACTERS} characters.`);
@@ -27,7 +53,7 @@ export default function App() {
     try {
       const response = await axios.post("http://localhost:5000/summarize", { text });
       setSummary(response.data.summary);
-      setQuestions([]); // ✅ Clear previous questions
+      setQuestions([]);
     } catch (err) {
       setError("Failed to summarize. Try again.");
     } finally {
@@ -35,7 +61,7 @@ export default function App() {
     }
   };
 
-  // ✅ PDF Upload & Extraction
+  // ✅ Upload PDF
   const handleFileUpload = async (event) => {
     const selectedFile = event.target.files[0];
     setFile(selectedFile);
@@ -49,14 +75,14 @@ export default function App() {
           headers: { "Content-Type": "multipart/form-data" },
         });
 
-        setText(response.data.text); // ✅ Set extracted text
+        setText(response.data.text);
       } catch (error) {
         setError("Error extracting text from PDF.");
       }
     }
   };
 
-  // ✅ Generate Practice Questions
+  // ✅ Generate Questions
   const handleGenerateQuestions = async () => {
     if (!summary) return setError("Summarize first before generating questions.");
 
@@ -79,15 +105,10 @@ export default function App() {
       <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
 
       <div className="flex flex-col items-center justify-center w-full pt-20 p-20">
-        <h1 className="text-4xl font-bold p-20">AI Summarizer</h1>
+        <h1 className="text-4xl font-bold p-10">AI Summarizer</h1>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6"
-        >
-          {/* ✅ File Upload */}
+        {/* ✅ File Upload */}
+        <motion.div className="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
           <input
             type="file"
             accept="application/pdf"
@@ -119,7 +140,7 @@ export default function App() {
         {/* ✅ Summary Output */}
         {summary && (
           <motion.div className="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mt-6">
-            <h2 className="text-xl font-semibold mb-2 text-white" >Summary:</h2>
+            <h2 className="text-xl font-semibold mb-2">Summary:</h2>
             <p className="text-gray-900 dark:text-white">{summary}</p>
 
             {/* ✅ Generate Questions Button */}
@@ -141,6 +162,38 @@ export default function App() {
               <details key={index} className="mb-3 border border-gray-300 dark:border-gray-600 rounded-lg p-3">
                 <summary className="cursor-pointer font-medium">{q.question}</summary>
                 <p className="mt-2 text-gray-700 dark:text-gray-300">{q.answer}</p>
+              </details>
+            ))}
+          </motion.div>
+        )}
+
+        {/* ✅ Collapsible History Button */}
+        <button
+          className="mt-8 px-6 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition duration-300"
+          onClick={() => {
+            if (!showHistory) fetchHistory();
+            setShowHistory(!showHistory);
+          }}
+        >
+          {showHistory ? "Hide History" : "View History"}
+        </button>
+
+        {/* ✅ History Section (Collapsible) */}
+        {showHistory && history.length > 0 && (
+          <motion.div className="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mt-6">
+            <h2 className="text-xl font-semibold mb-2">Past Summaries:</h2>
+            {history.map((entry, index) => (
+              <details key={index} className="mb-3 border border-gray-300 dark:border-gray-600 rounded-lg p-3">
+                <summary className="cursor-pointer font-medium">
+                  {entry.filename ? `📄 ${entry.filename}` : `Summary #${index + 1}`}
+                </summary>
+                <p className="mt-2 text-gray-700 dark:text-gray-300">{entry.summary}</p>
+                <button
+                  className="mt-2 px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                  onClick={() => handleDeleteSummary(entry._id)}
+                >
+                  Delete
+                </button>
               </details>
             ))}
           </motion.div>
