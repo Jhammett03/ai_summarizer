@@ -15,8 +15,12 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // ✅ Middleware
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+app.use(cors({
+  origin: ["https://tourmaline-quokka-f411ff.netlify.app/", "http://localhost:5173"], // ✅ Update this with your frontend URL
+  credentials: true,  // ✅ Allow cookies/session data
+}));
 app.use(bodyParser.json());
+
 
 // ✅ Enable sessions
 app.use(
