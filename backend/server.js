@@ -15,10 +15,25 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // ✅ Middleware
-app.use(cors({
-  origin: ["https://tourmaline-quokka-f411ff.netlify.app/", "http://localhost:5173"], // ✅ Update this with your frontend URL
-  credentials: true,  // ✅ Allow cookies/session data
-}));
+const allowedOrigins = [
+  "https://tourmaline-quokka-f411ff.netlify.app", // ✅ Netlify frontend
+  "http://localhost:5173" // ✅ Local development
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true, // ✅ Allow cookies/session authentication
+    methods: ["GET", "POST", "PUT", "DELETE"], // ✅ Allow specific HTTP methods
+    allowedHeaders: ["Content-Type", "Authorization"], // ✅ Allow necessary headers
+  })
+);
 app.use(bodyParser.json());
 
 
