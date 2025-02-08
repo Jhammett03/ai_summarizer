@@ -1,7 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import Navbar from "./Navbar"; // ✅ Import Navbar
-const API_URL = process.env.REACT_APP_API_URL;
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function LoginPage({ handleLogin }) {
   const [username, setUsername] = useState("");

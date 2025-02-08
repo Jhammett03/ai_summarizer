@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import LoginPage from "./components/Login";
 import MainApp from "./components/MainApp";
-const API_URL = process.env.REACT_APP_API_URL;
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function App() {
   const [user, setUser] = useState(null);
