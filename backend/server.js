@@ -16,7 +16,7 @@ const PORT = process.env.PORT || 5000;
 
 // ✅ Middleware
 app.use(cors({
-  origin: ["https://67a6d7105fca596fefe19f6a--tourmaline-quokka-f411ff.netlify.app/", "http://localhost:5173"], // ✅ Update this with your frontend URL
+  origin: ["https://tourmaline-quokka-f411ff.netlify.app/", "http://localhost:5173"], // ✅ Update this with your frontend URL
   credentials: true,  // ✅ Allow cookies/session data
 }));
 app.use(bodyParser.json());
