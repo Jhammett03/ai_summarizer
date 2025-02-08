@@ -35,7 +35,11 @@ app.use(
 
 // ✅ MongoDB Connection
 mongoose
-  .connect(process.env.MONGO_URI)
+  .connect(process.env.MONGO_URI, {
+    ssl: true, // ✅ Ensure SSL is enabled
+    tlsAllowInvalidCertificates: true, // ⚠️ Use only if needed
+    serverSelectionTimeoutMS: 5000, // Timeout if connection fails
+  })
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
