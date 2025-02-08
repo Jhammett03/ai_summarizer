@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import Navbar from "./Navbar"; // ✅ Import Navbar
+const API_URL = process.env.REACT_APP_API_URL;
 
 export default function LoginPage({ handleLogin }) {
   const [username, setUsername] = useState("");
@@ -21,7 +22,7 @@ export default function LoginPage({ handleLogin }) {
       if (isRegistering) {
         // ✅ Send a request to `/register` when signing up
         const response = await axios.post(
-          "http://localhost:5000/register",
+          `${API_URL}/register`,
           { username, password },
           { withCredentials: true }
         );
@@ -31,7 +32,7 @@ export default function LoginPage({ handleLogin }) {
       } else {
         // ✅ Send a request to `/login` when logging in
         const response = await axios.post(
-          "http://localhost:5000/login",
+          `${API_URL}/login`,
           { username, password },
           { withCredentials: true }
         );

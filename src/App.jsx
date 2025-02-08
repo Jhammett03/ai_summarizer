@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import LoginPage from "./components/Login";
 import MainApp from "./components/MainApp";
+const API_URL = process.env.REACT_APP_API_URL;
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -11,7 +12,7 @@ export default function App() {
   useEffect(() => {
     // ✅ Check session on load
     axios
-      .get("http://localhost:5000/me", { withCredentials: true })
+      .get(`${API_URL}/me`, { withCredentials: true })
       .then((response) => setUser(response.data.user))
       .catch(() => setUser(null))
       .finally(() => setLoading(false));
@@ -24,7 +25,7 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
-      const response = await axios.post("http://localhost:5000/logout", {}, { withCredentials: true });
+      const response = await axios.post(`${API_URL}/logout`, {}, { withCredentials: true });
       console.log("✅ Logout Response:", response.data);
       setUser(null);
       localStorage.removeItem("user");

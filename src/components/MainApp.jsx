@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import axios from "axios";
 import Navbar from "./Navbar";
+const API_URL = process.env.REACT_APP_API_URL;
 
 export default function MainApp({ user, onLogout }) {
   const [text, setText] = useState("");
@@ -23,7 +24,7 @@ export default function MainApp({ user, onLogout }) {
   const fetchHistory = async () => {
     setLoadingHistory(true);
     try {
-      const response = await axios.get("http://localhost:5000/summaries", {
+      const response = await axios.get(`${API_URL}/summaries`, {
         withCredentials: true,
       });
       setHistory(response.data);
@@ -41,7 +42,7 @@ export default function MainApp({ user, onLogout }) {
   // ✅ Delete a saved summary
   const handleDeleteSummary = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/summaries/${id}`, {
+      await axios.delete(`${API_URL}/summaries/${id}`, {
         withCredentials: true,
       });
       setHistory(history.filter((entry) => entry._id !== id));
@@ -66,7 +67,7 @@ export default function MainApp({ user, onLogout }) {
 
     try {
       const response = await axios.post(
-        "http://localhost:5000/summarize",
+        `${API_URL}/summarize`,
         { text },
         { withCredentials: true }
       );
@@ -91,7 +92,7 @@ export default function MainApp({ user, onLogout }) {
       formData.append("pdf", selectedFile);
 
       try {
-        const response = await axios.post("http://localhost:5000/upload", formData, {
+        const response = await axios.post(`${API_URL}/upload`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
           withCredentials: true,
         });
@@ -112,7 +113,7 @@ export default function MainApp({ user, onLogout }) {
   
     try {
       const response = await axios.post(
-        "http://localhost:5000/generate-questions",
+        `${API_URL}/generate-questions`,
         { summaryId: history[0]?._id, summary },
         { withCredentials: true }
       );
