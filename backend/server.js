@@ -30,8 +30,9 @@ app.use(
 // ✅ MongoDB Connection
 mongoose
   .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log("✅ MongoDB Connected"))
+  .then(() => console.log("✅ MongoDB Connected to:", mongoose.connection.name))
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
+
 
 // ✅ Define Mongoose Schema (Move this **above** the model declaration)
 const SummarySchema = new mongoose.Schema({
@@ -49,6 +50,14 @@ const Summary = mongoose.model("Summary", SummarySchema); // ✅ Now this works
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY, // Ensure `.env` has the API key
 });
+
+app.get("/me", (req, res) => {
+  if (req.session.user) {
+    return res.json({ user: req.session.user });
+  }
+  res.status(401).json({ error: "Not authenticated" });
+});
+
 
 // ✅ Summarization Route
 app.post("/summarize", async (req, res) => {
@@ -164,39 +173,70 @@ app.delete("/summaries/:id", async (req, res) => {
 
 // ✅ User Registration Route
 app.post("/register", async (req, res) => {
+  console.log("🔍 Register Request Body:", req.body);
+
   try {
     const { username, password } = req.body;
-    if (!username || !password) return res.status(400).json({ error: "Username and password required." });
+    if (!username || !password) {
+      return res.status(400).json({ error: "Username and password are required." });
+    }
 
     const existingUser = await User.findOne({ username });
-    if (existingUser) return res.status(400).json({ error: "Username already exists." });
+    if (existingUser) {
+      console.log("❌ Username already exists:", username);
+      return res.status(400).json({ error: "Username already exists." });
+    }
 
+    console.log("✅ Creating new user...");
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({ username, password: hashedPassword });
+    const newUser = new User({ username: username.trim(), password: hashedPassword });
     await newUser.save();
 
+    console.log("✅ User Registered:", newUser);
     res.status(201).json({ message: "User registered successfully." });
   } catch (error) {
+    console.error("❌ Registration Error:", error);
     res.status(500).json({ error: "Registration failed." });
   }
 });
 
+
 // ✅ User Login Route
 app.post("/login", async (req, res) => {
+  console.log("🔍 Login Request Body:", req.body); // Debug request body
+
   try {
     const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: "Username and password are required." });
+    }
+
     const user = await User.findOne({ username });
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (!user) {
+      console.log("❌ User Not Found in DB");
+      return res.status(400).json({ error: "Invalid username or password" });
+    }
+
+    console.log("✅ User Found:", user); // Log retrieved user
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    console.log("🔑 Password Match:", isMatch);
+
+    if (!isMatch) {
       return res.status(400).json({ error: "Invalid username or password" });
     }
 
     req.session.user = { _id: user._id, username: user.username };
     res.json({ user: req.session.user });
+
   } catch (error) {
+    console.error("❌ Login Error:", error);
     res.status(500).json({ error: "Login failed." });
   }
 });
+
+
 
 // ✅ Logout Route
 app.post("/logout", (req, res) => {

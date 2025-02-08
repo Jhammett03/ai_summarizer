@@ -1,19 +1,37 @@
-import { SunIcon, MoonIcon } from "@heroicons/react/24/outline";
+import React from "react";
 
-const Navbar = ({ darkMode, toggleDarkMode }) => {
+export default function Navbar({ darkMode, toggleDarkMode, onLogout, user, showHistory, setShowHistory }) {
   return (
-    <nav className="bg-gray-900 text-white fixed w-full shadow-md">
-      <div className="container mx-auto flex justify-between items-center p-4">
-        {/* Logo */}
-        <h1 className="text-2xl font-bold">AI Summarizer</h1>
+    <nav className="w-full bg-gray-800 text-white p-4 flex justify-between items-center shadow-md">
+      <h1 className="text-lg font-bold">AI Summarizer</h1>
 
-        {/* Dark Mode Toggle Button */}
-        <button onClick={toggleDarkMode} className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 ">
-          {darkMode ? <SunIcon className="w-6 h-6 text-yellow-400" /> : <MoonIcon className="w-6 h-6 text-gray-300" />}
+      <div className="flex items-center space-x-4">
+        {/* ✅ Show History Button */}
+        <button
+          onClick={() => setShowHistory(!showHistory)}
+          className="bg-blue-500 px-3 py-1 rounded hover:bg-blue-600 transition"
+        >
+          {showHistory ? "📂 Close History" : "📂 Show History"}
         </button>
+
+        {/* ✅ Dark Mode Toggle */}
+        <button
+          onClick={toggleDarkMode}
+          className="bg-gray-700 px-3 py-1 rounded hover:bg-gray-600 transition"
+        >
+          {darkMode ? "🌙 Dark" : "☀️ Light"}
+        </button>
+
+        {/* ✅ Show Logout Button Only If Logged In */}
+        {user && (
+          <button
+            onClick={onLogout}
+            className="bg-red-500 px-3 py-1 rounded hover:bg-red-600 transition"
+          >
+            Logout
+          </button>
+        )}
       </div>
     </nav>
   );
-};
-
-export default Navbar;
+}

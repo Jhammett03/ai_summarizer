@@ -14,24 +14,38 @@ export default function LoginPage({ handleLogin }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
+  
+    console.log("🛠️ Sending Auth Data:", { username, password, isRegistering });
+  
     try {
       if (isRegistering) {
-        await axios.post("http://localhost:5000/register", { username, password });
-        alert("Account created! Now log in.");
-        setIsRegistering(false);
+        // ✅ Send a request to `/register` when signing up
+        const response = await axios.post(
+          "http://localhost:5000/register",
+          { username, password },
+          { withCredentials: true }
+        );
+        console.log("✅ Registration Successful:", response.data);
+        alert("Account created! You can now log in.");
+        setIsRegistering(false); // ✅ Switch back to login mode
       } else {
+        // ✅ Send a request to `/login` when logging in
         const response = await axios.post(
           "http://localhost:5000/login",
           { username, password },
-          { withCredentials: true } // ✅ Session cookies allowed
+          { withCredentials: true }
         );
-        handleLogin(response.data.user); // ✅ Redirect to main app
+        console.log("✅ Login Successful:", response.data);
+        handleLogin(response.data.user);
       }
     } catch (err) {
+      console.error("❌ Auth Error:", err.response?.data || err.message);
       setError(err.response?.data?.error || "Something went wrong.");
     }
   };
+  
+  
+  
 
   return (
     <div className={`${darkMode ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"} min-h-screen flex flex-col`}>

@@ -14,31 +14,36 @@ export default function MainApp({ user, onLogout }) {
   const [darkMode, setDarkMode] = useState(true);
   const [file, setFile] = useState(null);
   const [history, setHistory] = useState([]);
-  const [showHistory, setShowHistory] = useState(false); // ✅ Collapsible history menu
+  const [showHistory, setShowHistory] = useState(false);
 
   const toggleDarkMode = () => setDarkMode(!darkMode);
   const MAX_CHARACTERS = 12000;
 
   // ✅ Fetch past summaries for the logged-in user
+  const fetchHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const response = await axios.get("http://localhost:5000/summaries", {
+        withCredentials: true,
+      });
+      setHistory(response.data);
+    } catch (err) {
+      setError("Failed to load history.");
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchHistory = async () => {
-      setLoadingHistory(true);
-      try {
-        const response = await axios.get("http://localhost:5000/summaries", { withCredentials: true });
-        setHistory(response.data);
-      } catch (err) {
-        setError("Failed to load history.");
-      } finally {
-        setLoadingHistory(false);
-      }
-    };
     fetchHistory();
   }, []);
 
   // ✅ Delete a saved summary
   const handleDeleteSummary = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/summaries/${id}`, { withCredentials: true });
+      await axios.delete(`http://localhost:5000/summaries/${id}`, {
+        withCredentials: true,
+      });
       setHistory(history.filter((entry) => entry._id !== id));
     } catch (err) {
       setError("Failed to delete summary.");
@@ -68,14 +73,13 @@ export default function MainApp({ user, onLogout }) {
 
       setSummary(response.data.summary);
       setQuestions([]);
-      await fetchHistory(); // ✅ Update history
+      await fetchHistory(); // ✅ Update history after summarizing
     } catch (err) {
       setError("Failed to summarize. Try again.");
     } finally {
       setLoadingSummary(false);
     }
   };
-
 
   // ✅ Upload PDF
   const handleFileUpload = async (event) => {
@@ -102,46 +106,58 @@ export default function MainApp({ user, onLogout }) {
   // ✅ Generate Questions and save them to MongoDB
   const handleGenerateQuestions = async () => {
     if (!summary) return setError("Summarize first before generating questions.");
-
+  
     setLoadingQuestions(true);
     setError("");
-
+  
     try {
       const response = await axios.post(
         "http://localhost:5000/generate-questions",
-        { summaryId: history[0]._id, summary },
+        { summaryId: history[0]?._id, summary },
         { withCredentials: true }
       );
-
+  
+      console.log("Generated Questions:", response.data.questions); // ✅ Debugging log
+  
+      if (!response.data.questions || response.data.questions.length === 0) {
+        throw new Error("No questions returned from server");
+      }
+  
       setQuestions(response.data.questions);
-
+  
       // ✅ Update history to reflect the new questions
-      setHistory(history.map(entry => entry._id === history[0]._id ? { ...entry, questions: response.data.questions } : entry));
-
+      setHistory(history.map(entry => 
+        entry._id === history[0]?._id ? { ...entry, questions: response.data.questions } : entry
+      ));
+  
     } catch (err) {
       setError("Failed to generate questions.");
+      console.error("Question Generation Error:", err);
     } finally {
       setLoadingQuestions(false);
     }
   };
+  
+
+  const generateSummaryName = (summaryText, index) => {
+    if (!summaryText) return `Summary #${index + 1}`;
+    const words = summaryText.split(" ").filter(word => word.length > 3); // Ignore short words
+    const name = words.slice(0, 3).join(" "); // Get first 2-3 words
+    return name || `Summary #${index + 1}`;
+  };
 
   return (
-    <div className={`${darkMode ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"} min-h-screen flex flex-col items-center`}>
-      
-      <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-      
+    <div
+      className={`${
+        darkMode ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"
+      } min-h-screen flex flex-col items-center`}
+    >
+      <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} onLogout={onLogout} user={user}
+      showHistory={showHistory} setShowHistory={setShowHistory} 
+      />
 
       <div className="flex flex-col items-center justify-center w-full pt-20 p-20">
         <h1 className="text-4xl font-bold p-10">AI Summarizer</h1>
-        {/* ✅ Open Sidebar Button (Positioned Right) */}
-        <button
-            className="fixed top-5  right-4 bg-gray-700 text-white px-3 py-2 rounded shadow-lg z-20"
-            onClick={() => setShowHistory(true)}
-          >
-            📂 Open History
-          </button>
-
-        
 
         {/* ✅ File Upload */}
         <motion.div className="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
@@ -149,13 +165,12 @@ export default function MainApp({ user, onLogout }) {
             type="file"
             accept="application/pdf"
             onChange={handleFileUpload}
-            className="mb-4 p-2 border border-gray-300 dark:border-gray-600 rounded-md w-full text-white"
+            className="mb-4 p-2 border border-gray-300 dark:border-gray-600 rounded-md w-full"
           />
 
           {/* ✅ Text Area */}
           <textarea
-            className="w-full h-40 p-4 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-400 outline-none text-black dark:text-white 
-            scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent resize-none"
+            className="w-full h-40 p-4 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md"
             placeholder="Paste your text here..."
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -165,7 +180,7 @@ export default function MainApp({ user, onLogout }) {
 
           {/* ✅ Summarize Button */}
           <button
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg mt-4 transition duration-300"
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg mt-4"
             onClick={handleSummarize}
             disabled={loadingSummary}
           >
@@ -177,7 +192,7 @@ export default function MainApp({ user, onLogout }) {
         {summary && (
           <motion.div className="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mt-6">
             <h2 className="text-xl font-semibold mb-2">Summary:</h2>
-            <p className="text-gray-900 dark:text-white">{summary}</p>
+            <p>{summary}</p>
 
             {/* ✅ Generate Questions Button */}
             <button
@@ -189,40 +204,49 @@ export default function MainApp({ user, onLogout }) {
             </button>
           </motion.div>
         )}
-
-        {/* ✅ Practice Questions */}
-        {questions.length > 0 && (
-          <motion.div className="w-full text-white max-w-3xl bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mt-6">
-            <h2 className="text-xl font-semibold mb-2">Practice Questions:</h2>
-            {questions.map((q, index) => (
-              <details key={index} className="mb-3 border border-gray-300 dark:border-gray-600 rounded-lg p-3">
-                <summary className="cursor-pointer font-medium">{q.question}</summary>
-                <p className="mt-2 text-gray-700 dark:text-gray-300">{q.answer}</p>
-              </details>
-            ))}
-          </motion.div>
-        )}
-
-        
-
-        {/* ✅ Logout Button */}
-        <button className="mt-6 px-6 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600" onClick={onLogout}>
-          Logout
-        </button>
+          {questions.length > 0 && (
+            <motion.div className="w-full text-white max-w-3xl bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mt-6">
+              <h2 className="text-xl font-semibold mb-2">Practice Questions:</h2>
+              {questions.map((q, index) => (
+                <details key={index} className="mb-3 border border-gray-300 dark:border-gray-600 rounded-lg p-3">
+                  <summary className="cursor-pointer font-medium">{q.question}</summary>
+                  <p className="mt-2 text-gray-700 dark:text-gray-300">{q.answer}</p>
+                </details>
+              ))}
+            </motion.div>
+          )}
       </div>
+
       {/* ✅ Collapsible Right Sidebar */}
       <div
-        className={`fixed top-0 right-0 h-full bg-gray-800 w-72 p-4 transition-transform duration-300 ease-in-out z-50 shadow-lg ${
+        className={`fixed top-0 right-0 h-full bg-gray-800 w-72 p-4 transition-transform duration-300 z-50 shadow-lg ${
           showHistory ? "translate-x-0" : "translate-x-full"
         }`}
       >
         <h2 className="text-lg font-bold text-white">📜 History</h2>
         <button
           onClick={() => setShowHistory(false)}
-          className="absolute top-2 right-2 text-white bg-gray-700 px-2 py-1 rounded shadow"
+          className="absolute top-2 right-2 text-white bg-gray-700 px-2 py-1 rounded"
         >
           ✖
         </button>
+        <div className="mt-4 space-y-2">
+          {history.length === 0 ? (
+            <p className="text-gray-400">No history found.</p>
+          ) : (
+            history.map((entry, index) => (
+              <div key ={entry.id || index}
+              className="flex justify-between items-center bg-gray-700 hover:bg-gray-600 text-white rounded-lg p-3 cursor-pointer"
+              >
+              <button className="flex-grow  px-4" key={entry._id} onClick={() => handleLoadSummary(entry)}>
+                {generateSummaryName(entry.summary, index)}
+              </button>
+              <button className="ml-2 text-red-400 hover:bg-red-400 border border-red-400 hover:border-red-600 bg-gray-800 p-2 rounded" onClick={() => handleDeleteSummary(entry._id)}>🗑
+              </button>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
