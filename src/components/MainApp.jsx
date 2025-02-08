@@ -62,26 +62,29 @@ export default function MainApp({ user, onLogout }) {
     if (!text) return setError("Please enter text to summarize.");
     if (text.length > MAX_CHARACTERS)
       return setError(`Text exceeds ${MAX_CHARACTERS} characters.`);
-
+  
     setLoadingSummary(true);
     setError("");
-
+  
     try {
       const response = await axios.post(
         `${API_URL}/summarize`,
         { text },
-        { withCredentials: true }
+        { withCredentials: true } // ✅ Ensure cookies are sent
       );
-
+  
+      console.log("✅ Summary Response:", response.data);
       setSummary(response.data.summary);
       setQuestions([]);
-      await fetchHistory(); // ✅ Update history after summarizing
+      await fetchHistory();
     } catch (err) {
+      console.error("❌ Summary Error:", err);
       setError("Failed to summarize. Try again.");
     } finally {
       setLoadingSummary(false);
     }
   };
+  
 
   // ✅ Upload PDF
   const handleFileUpload = async (event) => {

@@ -22,19 +22,25 @@ const allowedOrigins = [
 
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    credentials: true, // ✅ Allow cookies/session authentication
-    methods: ["GET", "POST", "PUT", "DELETE"], // ✅ Allow specific HTTP methods
-    allowedHeaders: ["Content-Type", "Authorization"], // ✅ Allow necessary headers
+    origin: allowedOrigins,
+    credentials: true, // 🔹 Allows sending session cookies
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 app.use(bodyParser.json());
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "supersecuresecret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: true, // ✅ Set `true` in production
+      httpOnly: true,
+      sameSite: "None", // ✅ Required for cross-origin cookies
+    },
+  })
+);
 
 
 // ✅ Enable sessions
