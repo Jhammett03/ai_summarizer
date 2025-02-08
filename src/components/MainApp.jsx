@@ -162,7 +162,7 @@ export default function MainApp({ user, onLogout }) {
         <h1 className="text-4xl font-bold p-10">AI Summarizer</h1>
 
         {/* ✅ File Upload */}
-        <motion.div className="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <motion.div className="w-full max-w-3xl bg-gray-800 dark:bg-gray-800 rounded-lg shadow-lg p-6 text-white">
           <input
             type="file"
             accept="application/pdf"
@@ -172,7 +172,7 @@ export default function MainApp({ user, onLogout }) {
 
           {/* ✅ Text Area */}
           <textarea
-            className="w-full h-40 p-4 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md"
+            className="w-full h-40 p-4 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-gray-800"
             placeholder="Paste your text here..."
             value={text}
             onChange={(e) => setText(e.target.value)}
