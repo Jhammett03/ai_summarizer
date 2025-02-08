@@ -8,6 +8,7 @@ const pdfParse = require("pdf-parse");
 const mongoose = require("mongoose");
 const session = require("express-session");
 const User = require("./models/User");
+const MongoStore = require("connect-mongo");
 require("dotenv").config();
 
 const app = express();
@@ -23,14 +24,19 @@ app.use(
     secret: process.env.SESSION_SECRET || "your-secret",
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false, httpOnly: true },
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGO_URI, // Use your MongoDB connection string
+      collectionName: "sessions", // Name of the session collection
+    }),
+    cookie: { secure: false, httpOnly: true }, // Set secure: true for HTTPS
   })
 );
 
+
 // ✅ MongoDB Connection
 mongoose
-  .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log("✅ MongoDB Connected to:", mongoose.connection.name))
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
 
