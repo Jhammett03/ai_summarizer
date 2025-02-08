@@ -34,13 +34,19 @@ app.use(
     secret: process.env.SESSION_SECRET || "supersecuresecret",
     resave: false,
     saveUninitialized: false,
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGO_URI, // ✅ Use your MongoDB connection string
+      collectionName: "sessions", // Optional: customize collection name
+      ttl: 24 * 60 * 60, // Optional: session expiration in seconds (1 day)
+    }),
     cookie: {
-      secure: true, // ✅ Set `true` in production
+      secure: true, // ✅ Set to `true` in production (false for local development)
       httpOnly: true,
       sameSite: "None", // ✅ Required for cross-origin cookies
     },
   })
 );
+
 
 
 // ✅ Enable sessions
