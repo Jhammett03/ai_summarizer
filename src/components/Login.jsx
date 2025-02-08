@@ -55,12 +55,13 @@ export default function LoginPage({ handleLogin }) {
       <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
 
       <div className="flex flex-col items-center justify-center flex-grow">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full">
+        <div className="bg-gray-800
+         dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full">
           <h2 className="text-2xl font-bold text-white">{isRegistering ? "Sign Up" : "Log In"}</h2>
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
 
-          <form onSubmit={handleSubmit} className="mt-4">
+          <form onSubmit={handleSubmit} className="mt-4 text-gray-800">
             <input
               type="text"
               placeholder="Username"

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import axios from "axios";
 import Navbar from "./Navbar";
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 
 export default function MainApp({ user, onLogout }) {
