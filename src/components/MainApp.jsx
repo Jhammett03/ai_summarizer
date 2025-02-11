@@ -23,14 +23,22 @@ export default function MainApp({ user, setUser, onLogout }) {
   useEffect(() => {
     const checkSession = async () => {
       try {
+        console.log("📌 Checking session...");
         const response = await axiosInstance.get("/me");
-        setUser(response.data.user);
+  
+        if (response.data && response.data.user) {
+          console.log("✅ Session Found:", response.data.user);
+          setUser(response.data.user);
+        } else {
+          console.log("❌ No user in session response:", response.data);
+        }
       } catch (err) {
         console.error("❌ No session found:", err.response?.data?.error || err.message);
       }
     };
     checkSession();
   }, []);
+  
 
   // ✅ Fetch past summaries for the logged-in user
   const fetchHistory = async () => {
