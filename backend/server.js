@@ -204,5 +204,55 @@ app.post("/upload", upload.single("pdf"), async (req, res) => {
   }
 });
 
+// ✅ Generate Practice Questions Route
+app.post("/generate-questions", async (req, res) => {
+  const { summaryId, summary } = req.body;
+  const userId = req.session.user?._id;
+  if (!summaryId || !summary) return res.status(400).json({ error: "No summary provided" });
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [{ role: "user", content: `Generate 3 practice questions based on this summary:\n${summary}\nFormat:\nQ1: [question]\nA: [answer]` }],
+      temperature: 0.7,
+      max_tokens: 600,
+    });
+
+    const questionsText = response.choices[0].message.content;
+    const questionPattern = /Q\d+:\s(.+?)\nA:\s(.+?)(?:\n|$)/g;
+    let match;
+    let questions = [];
+
+    while ((match = questionPattern.exec(questionsText)) !== null) {
+      questions.push({ question: match[1].trim(), answer: match[2].trim() });
+    }
+
+    if (questions.length === 0) throw new Error("No valid questions extracted");
+
+    // ✅ Update summary with generated questions
+    await Summary.findByIdAndUpdate(summaryId, { questions });
+
+    res.json({ questions });
+  } catch (error) {
+    console.error("❌ Question Generation Error:", error);
+    res.status(500).json({ error: "Question generation failed." });
+  }
+});
+
+// ✅ Delete a Summary
+app.delete("/summaries/:id", async (req, res) => {
+  const userId = req.session.user?._id;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  try {
+    const { id } = req.params;
+    await Summary.findOneAndDelete({ _id: id, userId });
+    res.json({ success: true, message: "Summary deleted successfully." });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to delete summary." });
+  }
+});
+
 // ✅ **Start Server**
 app.listen(PORT, () => console.log(`🔥 Server running on http://localhost:${PORT}`));
