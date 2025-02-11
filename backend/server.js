@@ -98,20 +98,25 @@ app.post("/login", async (req, res) => {
       return res.status(400).json({ error: "Invalid username or password" });
     }
 
+    // ✅ Explicitly store user data in session
     req.session.user = { _id: user._id, username: user.username };
-    console.log("✅ User Logged In:", req.session.user); // Debugging
 
+    // ✅ Manually save the session to ensure it persists
     req.session.save((err) => {
       if (err) {
         console.error("❌ Session Save Error:", err);
-        return res.status(500).json({ error: "Session save failed." });
+        return res.status(500).json({ error: "Session save failed" });
       }
+      console.log("✅ User Logged In & Session Saved:", req.session.user);
       res.json({ user: req.session.user });
     });
+
   } catch (error) {
+    console.error("❌ Login Error:", error);
     res.status(500).json({ error: "Login failed." });
   }
 });
+
 
 
 
