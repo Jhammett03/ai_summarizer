@@ -37,11 +37,12 @@ app.use(
     store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
     cookie: {
       secure: process.env.NODE_ENV === "production", // ✅ Secure cookies in production
-      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax", // ✅ Fix cross-origin issues
+      sameSite: "None", // ✅ Required for cross-site cookies
       httpOnly: true,
     },
   })
 );
+
 
 // ✅ **MongoDB Connection**
 mongoose
@@ -115,31 +116,24 @@ app.post("/login", async (req, res) => {
   }
 });
 
-
-
-
 // ✅ Check session after login
 app.get("/me", async (req, res) => {
   console.log("📌 Checking Session:", req.session);
   
-  //debug
-  console.log(req.session)
-  console.log(req.session.user)
   if (!req.session || !req.session.user) {
+    console.log("❌ No Session Found!");
     return res.status(401).json({ error: "Not authenticated" });
   }
 
   try {
-    // Fetch the user from the session store
     const sessionUser = req.session.user;
+    console.log("✅ Session Found:", sessionUser);
     return res.json({ user: sessionUser });
   } catch (error) {
     console.error("❌ Session Retrieval Error:", error);
     return res.status(500).json({ error: "Server error retrieving session" });
   }
 });
-
-
 
 // ✅ **User Logout**
 app.post("/logout", (req, res) => {
