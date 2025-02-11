@@ -12,7 +12,7 @@ const User = require("./models/User");
 require("dotenv").config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT;
 
 // ✅ **Fix CORS to Allow Cross-Origin Cookies**
 app.use(
