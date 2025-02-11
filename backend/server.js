@@ -13,12 +13,19 @@ require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT;
+const ORIGIN = process.env.ORIGIN;
 
 // ✅ **Fix CORS to Allow Cross-Origin Cookies**
 app.use(
   cors({
-    origin: "https://ai-summarizer-frontend.onrender.com", // ✅ Your frontend URL
-    credentials: true, // ✅ Allow cookies
+    origin: function (origin, callback) {
+      if (ORIGIN) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true, // ✅ Allows session cookies
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
@@ -29,7 +36,7 @@ app.use(
 app.use(bodyParser.json());
 
 // ✅ **Session Configuration (Persists User Login)**
-app.set("trust proxy", 1); // ✅ Required for sessions behind proxies like Render
+app.set("trust proxy", 1); // ✅ Required for Render & local development
 
 app.use(
   session({
@@ -38,12 +45,13 @@ app.use(
     saveUninitialized: false,
     store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
     cookie: {
-      secure: true, // ✅ Ensures the cookie is only sent over HTTPS
-      sameSite: "None", // ✅ Required for cross-site cookies
-      httpOnly: true, // ✅ Prevents XSS attacks
+      secure: process.env.NODE_ENV === "production", // ✅ Secure only in production
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax", // ✅ Allows local cross-origin requests
+      httpOnly: true,
     },
   })
 );
+
 
 
 
