@@ -62,15 +62,6 @@ const Summary = mongoose.model("Summary", SummarySchema);
 // ✅ **Initialize OpenAI API**
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// ✅ **Check User Session (Debugging)**
-app.get("/me", (req, res) => {
-  console.log("📌 Checking Session:", req.session); // ✅ Debugging log
-  if (!req.session.user) {
-    return res.status(401).json({ error: "Not authenticated" });
-  }
-  res.json({ user: req.session.user });
-});
-
 // ✅ **User Registration**
 app.post("/register", async (req, res) => {
   try {
@@ -96,29 +87,42 @@ app.post("/register", async (req, res) => {
 
 // ✅ **User Login (Ensures Session Persists)**
 app.post("/login", async (req, res) => {
+  console.log("🔍 Login Request Body:", req.body);
+
   try {
     const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: "Username and password are required." });
+    }
+
     const user = await User.findOne({ username });
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
+      console.log("❌ Invalid login attempt:", username);
       return res.status(400).json({ error: "Invalid username or password" });
     }
 
-    // ✅ Fix session persistence by regenerating session
-    req.session.regenerate((err) => {
-      if (err) {
-        console.error("❌ Session Regeneration Error:", err);
-        return res.status(500).json({ error: "Session error" });
-      }
+    req.session.user = { _id: user._id, username: user.username };
+    console.log("✅ User Logged In:", req.session.user);
 
-      req.session.user = { _id: user._id, username: user.username };
-      console.log("✅ Session After Login:", req.session); // Debugging session data
-      res.json({ user: req.session.user });
-    });
+    res.json({ user: req.session.user });
   } catch (error) {
+    console.error("❌ Login Error:", error);
     res.status(500).json({ error: "Login failed." });
   }
 });
+
+// ✅ Check session after login
+app.get("/me", (req, res) => {
+  console.log("📌 Checking Session:", req.session);
+
+  if (!req.session.user) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+
+  res.json({ user: req.session.user });
+});
+
 
 // ✅ **User Logout**
 app.post("/logout", (req, res) => {
