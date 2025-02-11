@@ -17,7 +17,7 @@ const PORT = process.env.PORT;
 // ✅ **Fix CORS to Allow Cross-Origin Cookies**
 app.use(
   cors({
-    origin: "https://ai-summarizer-8vz4.onrender.com", // ✅ Your frontend URL
+    origin: "https://ai-summarizer-frontend.onrender.com", // ✅ Your frontend URL
     credentials: true, // ✅ Allow cookies
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
