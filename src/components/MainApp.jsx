@@ -165,38 +165,106 @@ export default function MainApp({ user, setUser, onLogout }) {
   };
 
   return (
-    <div className={`${darkMode ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"} min-h-screen flex flex-col items-center`}>
-      <Navbar 
-        darkMode={darkMode} 
-        toggleDarkMode={toggleDarkMode} 
-        onLogout={onLogout} 
-        user={user} 
-        showHistory={showHistory} 
-        setShowHistory={setShowHistory} 
+    <div
+      className={`${
+        darkMode ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"
+      } min-h-screen flex flex-col items-center`}
+    >
+      <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} onLogout={onLogout} user={user}
+      showHistory={showHistory} setShowHistory={setShowHistory} 
       />
 
-      <div className="bg-gray-800
-              dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full">
+      <div className="flex flex-col items-center justify-center w-full pt-20 p-20">
         <h1 className="text-4xl font-bold p-10">AI Summarizer</h1>
 
         {/* ✅ File Upload */}
-        <motion.div className="w-full max-w-3xl bg-gray-800 dark:bg-gray-800 rounded-lg shadow-lg p-6 text-white">
-          <input type="file" accept="application/pdf" onChange={handleFileUpload} className="mb-4 p-2 border border-gray-300 rounded-md w-full" />
+        <motion.div className="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+          <input
+            type="file"
+            accept="application/pdf"
+            onChange={handleFileUpload}
+            className="mb-4 p-2 border border-gray-300 dark:border-gray-600 rounded-md w-full"
+          />
 
           {/* ✅ Text Area */}
-          <textarea  className="w-full h-40 p-4 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-gray-800"
-            placeholder="Paste your text here..." value={text} onChange={(e) => setText(e.target.value)}
+          <textarea
+            className="w-full h-40 p-4 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md"
+            placeholder="Paste your text here..."
+            value={text}
+            onChange={(e) => setText(e.target.value)}
           />
 
           {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
 
           {/* ✅ Summarize Button */}
-          <button className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg mt-4"
-            onClick={handleSummarize} disabled={loadingSummary}
+          <button
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg mt-4"
+            onClick={handleSummarize}
+            disabled={loadingSummary}
           >
             {loadingSummary ? "Summarizing..." : "Summarize"}
           </button>
         </motion.div>
+
+        {/* ✅ Summary Output */}
+        {summary && (
+          <motion.div className="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mt-6">
+            <h2 className="text-xl font-semibold mb-2">Summary:</h2>
+            <p>{summary}</p>
+
+            {/* ✅ Generate Questions Button */}
+            <button
+              className="mt-4 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600"
+              onClick={handleGenerateQuestions}
+              disabled={loadingQuestions}
+            >
+              {loadingQuestions ? "Generating Questions..." : "Generate Questions"}
+            </button>
+          </motion.div>
+        )}
+          {questions.length > 0 && (
+            <motion.div className="w-full text-white max-w-3xl bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mt-6">
+              <h2 className="text-xl font-semibold mb-2">Practice Questions:</h2>
+              {questions.map((q, index) => (
+                <details key={index} className="mb-3 border border-gray-300 dark:border-gray-600 rounded-lg p-3">
+                  <summary className="cursor-pointer font-medium">{q.question}</summary>
+                  <p className="mt-2 text-gray-700 dark:text-gray-300">{q.answer}</p>
+                </details>
+              ))}
+            </motion.div>
+          )}
+      </div>
+
+      {/* ✅ Collapsible Right Sidebar */}
+      <div
+        className={`fixed top-0 right-0 h-full bg-gray-800 w-72 p-4 transition-transform duration-300 z-50 shadow-lg ${
+          showHistory ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        <h2 className="text-lg font-bold text-white">📜 History</h2>
+        <button
+          onClick={() => setShowHistory(false)}
+          className="absolute top-2 right-2 text-white bg-gray-700 px-2 py-1 rounded"
+        >
+          ✖
+        </button>
+        <div className="mt-4 space-y-2">
+          {history.length === 0 ? (
+            <p className="text-gray-400">No history found.</p>
+          ) : (
+            history.map((entry, index) => (
+              <div key ={entry.id || index}
+              className="flex justify-between items-center bg-gray-700 hover:bg-gray-600 text-white rounded-lg p-3 cursor-pointer"
+              >
+              <button className="flex-grow  px-4" key={entry._id} onClick={() => handleLoadSummary(entry)}>
+                {generateSummaryName(entry.summary, index)}
+              </button>
+              <button className="ml-2 text-red-400 hover:bg-red-400 border border-red-400 hover:border-red-600 bg-gray-800 p-2 rounded" onClick={() => handleDeleteSummary(entry._id)}>🗑
+              </button>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
