@@ -13,19 +13,20 @@ require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const CLIENT_URL = "https://tourmaline-quokka-f411ff.netlify.app"; // Update with your Netlify frontend URL
 
 // ✅ **Fix CORS (Allow Frontend Requests)**
 app.use(
   cors({
-    origin: "https://tourmaline-quokka-f411ff.netlify.app", // ✅ Update with your Netlify frontend URL
-    credentials: true, // ✅ Allow cookies/sessions
+    origin: CLIENT_URL,
+    credentials: true, // ✅ Allow credentials (cookies, sessions)
   })
 );
 
 // ✅ **Body Parser Middleware**
 app.use(bodyParser.json());
 
-// ✅ **Session Configuration (Ensures Authentication Works)**
+// ✅ **Session Configuration (Fixes Persistent Login)**
 app.use(
   session({
     secret: process.env.SECRET_KEY || "your-secret-key",
@@ -33,7 +34,7 @@ app.use(
     saveUninitialized: false,
     store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }), // ✅ Store sessions in MongoDB
     cookie: {
-      secure: true, // ✅ Required for HTTPS (set to false if testing locally)
+      secure: process.env.NODE_ENV === "production", // ✅ Required for HTTPS
       sameSite: "None", // ✅ Crucial for cross-origin requests
       httpOnly: true,
     },
@@ -67,7 +68,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// ✅ **Auth Check Route**
+// ✅ **Auth Check Route (Check if Logged In)**
 app.get("/me", (req, res) => {
   console.log("📌 Checking Session:", req.session); // Debugging
 
@@ -76,6 +77,43 @@ app.get("/me", (req, res) => {
   }
 
   res.json({ user: req.session.user });
+});
+
+// ✅ **Fix: User Login (Ensure Session Persists)**
+app.post("/login", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const user = await User.findOne({ username });
+
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(400).json({ error: "Invalid username or password" });
+    }
+
+    req.session.regenerate((err) => {
+      if (err) {
+        console.error("❌ Session Regeneration Error:", err);
+        return res.status(500).json({ error: "Session error" });
+      }
+
+      req.session.user = { _id: user._id, username: user.username };
+      res.json({ user: req.session.user });
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Login failed." });
+  }
+});
+
+// ✅ **Fix: Persistent Auth on Page Reload**
+app.get("/session-check", (req, res) => {
+  if (req.session.user) {
+    return res.json({ authenticated: true, user: req.session.user });
+  }
+  res.json({ authenticated: false });
+});
+
+// ✅ **Fix: Logout (Ensure Session Destroyed)**
+app.post("/logout", (req, res) => {
+  req.session.destroy(() => res.json({ message: "Logged out successfully" }));
 });
 
 // ✅ **Summarization Route**
@@ -108,40 +146,14 @@ app.post("/summarize", async (req, res) => {
   }
 });
 
-// ✅ **Generate Practice Questions**
-app.post("/generate-questions", async (req, res) => {
-  const { summaryId, summary } = req.body;
-  const userId = req.session.user?._id;
-
-  if (!summaryId || !summary) return res.status(400).json({ error: "No summary provided" });
-  if (!userId) return res.status(401).json({ error: "Not authenticated" });
-
-  try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [{ role: "user", content: `Generate 3 practice questions based on this summary:\n${summary}\nFormat:\nQ1: [question]\nA: [answer]` }],
-      temperature: 0.7,
-      max_tokens: 600,
-    });
-
-    const questionsText = response.choices[0].message.content;
-    const questionPattern = /Q\d+:\s(.+?)\nA:\s(.+?)(?:\n|$)/g;
-    let match;
-    let questions = [];
-
-    while ((match = questionPattern.exec(questionsText)) !== null) {
-      questions.push({ question: match[1].trim(), answer: match[2].trim() });
-    }
-
-    if (questions.length === 0) throw new Error("No valid questions extracted");
-
-    await Summary.findByIdAndUpdate(summaryId, { questions });
-
-    res.json({ questions });
-  } catch (error) {
-    console.error("❌ Question Generation Error:", error);
-    res.status(500).json({ error: "Question generation failed." });
+// ✅ **Fetch User's Summaries**
+app.get("/summaries", async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ error: "Not authenticated" });
   }
+
+  const summaries = await Summary.find({ userId: req.session.user._id }).sort({ createdAt: -1 });
+  res.json(summaries);
 });
 
 // ✅ **PDF Upload**
@@ -163,18 +175,6 @@ app.post("/upload", upload.single("pdf"), async (req, res) => {
     console.error("❌ PDF Parsing Error:", error);
     res.status(500).json({ error: "Failed to extract text from PDF" });
   }
-});
-
-// ✅ **Fetch User's Summaries**
-app.get("/summaries", async (req, res) => {
-  console.log("📌 Checking Session:", req.session); // Debugging
-
-  if (!req.session.user) {
-    return res.status(401).json({ error: "Not authenticated" });
-  }
-
-  const summaries = await Summary.find({ userId: req.session.user._id }).sort({ createdAt: -1 });
-  res.json(summaries);
 });
 
 // ✅ **User Registration**
@@ -199,28 +199,6 @@ app.post("/register", async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: "Registration failed." });
   }
-});
-
-// ✅ **User Login**
-app.post("/login", async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    const user = await User.findOne({ username });
-
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(400).json({ error: "Invalid username or password" });
-    }
-
-    req.session.user = { _id: user._id, username: user.username };
-    res.json({ user: req.session.user });
-  } catch (error) {
-    res.status(500).json({ error: "Login failed." });
-  }
-});
-
-// ✅ **Logout**
-app.post("/logout", (req, res) => {
-  req.session.destroy(() => res.json({ message: "Logged out successfully" }));
 });
 
 // ✅ **Start Server**
