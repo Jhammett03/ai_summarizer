@@ -119,6 +119,9 @@ app.post("/login", async (req, res) => {
 app.get("/me", async (req, res) => {
   console.log("📌 Checking Session:", req.session);
   
+  //debug
+  console.log(req.session)
+  console.log(req.session.user)
   if (!req.session || !req.session.user) {
     return res.status(401).json({ error: "Not authenticated" });
   }
