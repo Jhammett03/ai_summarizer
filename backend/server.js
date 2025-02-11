@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 5000;
 // ✅ **Fix CORS to Allow Cross-Origin Cookies**
 app.use(
   cors({
-    origin: "https://tourmaline-quokka-f411ff.netlify.app", // ✅ Your frontend URL
+    origin: "https://ai-summarizer-8vz4.onrender.com", // ✅ Your frontend URL
     credentials: true, // ✅ Allow cookies
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
