@@ -175,15 +175,16 @@ export default function MainApp({ user, setUser, onLogout }) {
         setShowHistory={setShowHistory} 
       />
 
-      <div className="flex flex-col items-center justify-center w-full pt-20 p-20">
+      <div className="bg-gray-800
+              dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full">
         <h1 className="text-4xl font-bold p-10">AI Summarizer</h1>
 
         {/* ✅ File Upload */}
-        <motion.div className="w-full max-w-3xl bg-gray-800 rounded-lg shadow-lg p-6 text-white">
+        <motion.div className="w-full max-w-3xl bg-gray-800 dark:bg-gray-800 rounded-lg shadow-lg p-6 text-white">
           <input type="file" accept="application/pdf" onChange={handleFileUpload} className="mb-4 p-2 border border-gray-300 rounded-md w-full" />
 
           {/* ✅ Text Area */}
-          <textarea className="w-full h-40 p-4 bg-gray-100 dark:bg-gray-700 border border-gray-300 rounded-md text-gray-800"
+          <textarea  className="w-full h-40 p-4 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-gray-800"
             placeholder="Paste your text here..." value={text} onChange={(e) => setText(e.target.value)}
           />
 
