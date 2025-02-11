@@ -13,20 +13,21 @@ require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const CLIENT_URL = "https://tourmaline-quokka-f411ff.netlify.app"; // Update with your Netlify frontend URL
 
-// ✅ **Fix CORS (Allow Frontend Requests)**
+// ✅ **Fix CORS to Allow Cross-Origin Cookies**
 app.use(
   cors({
-    origin: CLIENT_URL,
-    credentials: true, // ✅ Allow credentials (cookies, sessions)
+    origin: "https://tourmaline-quokka-f411ff.netlify.app", // ✅ Update with Netlify frontend URL
+    credentials: true, // ✅ Allow sending cookies
+    methods: ["GET", "POST", "PUT", "DELETE"], // ✅ Allowed HTTP methods
+    allowedHeaders: ["Content-Type", "Authorization"], // ✅ Allow necessary headers
   })
 );
 
 // ✅ **Body Parser Middleware**
 app.use(bodyParser.json());
 
-// ✅ **Session Configuration (Fixes Persistent Login)**
+// ✅ **Session Configuration (Persists User Login)**
 app.use(
   session({
     secret: process.env.SECRET_KEY || "your-secret-key",
@@ -35,19 +36,15 @@ app.use(
     store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }), // ✅ Store sessions in MongoDB
     cookie: {
       secure: process.env.NODE_ENV === "production", // ✅ Required for HTTPS
-      sameSite: "None", // ✅ Crucial for cross-origin requests
-      httpOnly: true,
+      httpOnly: true, // ✅ Prevents frontend JS from accessing cookies
+      sameSite: "None", // ✅ Allows cross-origin requests
     },
   })
 );
 
 // ✅ **MongoDB Connection**
 mongoose
-  .connect(process.env.MONGO_URI, {
-    ssl: true,
-    tlsAllowInvalidCertificates: true, // ⚠️ Use only if SSL issues occur
-    serverSelectionTimeoutMS: 5000,
-  })
+  .connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 5000 })
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
@@ -60,26 +57,44 @@ const SummarySchema = new mongoose.Schema({
   questions: [{ question: String, answer: String }],
   createdAt: { type: Date, default: Date.now },
 });
-
 const Summary = mongoose.model("Summary", SummarySchema);
 
 // ✅ **Initialize OpenAI API**
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// ✅ **Auth Check Route (Check if Logged In)**
+// ✅ **Check User Session (Debugging)**
 app.get("/me", (req, res) => {
-  console.log("📌 Checking Session:", req.session); // Debugging
-
+  console.log("📌 Checking Session:", req.session); // ✅ Debugging log
   if (!req.session.user) {
     return res.status(401).json({ error: "Not authenticated" });
   }
-
   res.json({ user: req.session.user });
 });
 
-// ✅ **Fix: User Login (Ensure Session Persists)**
+// ✅ **User Registration**
+app.post("/register", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: "Username and password are required." });
+    }
+
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      return res.status(400).json({ error: "Username already exists." });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({ username: username.trim(), password: hashedPassword });
+    await newUser.save();
+
+    res.status(201).json({ message: "User registered successfully." });
+  } catch (error) {
+    res.status(500).json({ error: "Registration failed." });
+  }
+});
+
+// ✅ **User Login (Ensures Session Persists)**
 app.post("/login", async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -89,6 +104,7 @@ app.post("/login", async (req, res) => {
       return res.status(400).json({ error: "Invalid username or password" });
     }
 
+    // ✅ Fix session persistence by regenerating session
     req.session.regenerate((err) => {
       if (err) {
         console.error("❌ Session Regeneration Error:", err);
@@ -96,6 +112,7 @@ app.post("/login", async (req, res) => {
       }
 
       req.session.user = { _id: user._id, username: user.username };
+      console.log("✅ Session After Login:", req.session); // Debugging session data
       res.json({ user: req.session.user });
     });
   } catch (error) {
@@ -103,20 +120,12 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// ✅ **Fix: Persistent Auth on Page Reload**
-app.get("/session-check", (req, res) => {
-  if (req.session.user) {
-    return res.json({ authenticated: true, user: req.session.user });
-  }
-  res.json({ authenticated: false });
-});
-
-// ✅ **Fix: Logout (Ensure Session Destroyed)**
+// ✅ **User Logout**
 app.post("/logout", (req, res) => {
   req.session.destroy(() => res.json({ message: "Logged out successfully" }));
 });
 
-// ✅ **Summarization Route**
+// ✅ **Summarization**
 app.post("/summarize", async (req, res) => {
   const { text } = req.body;
   const userId = req.session.user?._id;
@@ -148,10 +157,10 @@ app.post("/summarize", async (req, res) => {
 
 // ✅ **Fetch User's Summaries**
 app.get("/summaries", async (req, res) => {
+  console.log("📌 Checking Session:", req.session);
   if (!req.session.user) {
     return res.status(401).json({ error: "Not authenticated" });
   }
-
   const summaries = await Summary.find({ userId: req.session.user._id }).sort({ createdAt: -1 });
   res.json(summaries);
 });
@@ -174,30 +183,6 @@ app.post("/upload", upload.single("pdf"), async (req, res) => {
   } catch (error) {
     console.error("❌ PDF Parsing Error:", error);
     res.status(500).json({ error: "Failed to extract text from PDF" });
-  }
-});
-
-// ✅ **User Registration**
-app.post("/register", async (req, res) => {
-  try {
-    const { username, password } = req.body;
-
-    if (!username || !password) {
-      return res.status(400).json({ error: "Username and password are required." });
-    }
-
-    const existingUser = await User.findOne({ username });
-    if (existingUser) {
-      return res.status(400).json({ error: "Username already exists." });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({ username: username.trim(), password: hashedPassword });
-    await newUser.save();
-
-    res.status(201).json({ message: "User registered successfully." });
-  } catch (error) {
-    res.status(500).json({ error: "Registration failed." });
   }
 });
 
