@@ -31,11 +31,11 @@ app.use(bodyParser.json());
 app.use(
   session({
     secret: process.env.SECRET_KEY || "your-secret-key",
-    resave: false,
+    resave: true,
     saveUninitialized: false,
     store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }), // ✅ Store sessions in MongoDB
     cookie: {
-      secure: process.env.NODE_ENV === "production", // ✅ Required for HTTPS
+      secure: true, // ✅ Required for HTTPS
       httpOnly: true, // ✅ Prevents frontend JS from accessing cookies
       sameSite: "None", // ✅ Allows cross-origin requests
     },
@@ -91,26 +91,29 @@ app.post("/login", async (req, res) => {
 
   try {
     const { username, password } = req.body;
-    if (!username || !password) {
-      return res.status(400).json({ error: "Username and password are required." });
-    }
-
     const user = await User.findOne({ username });
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      console.log("❌ Invalid login attempt:", username);
       return res.status(400).json({ error: "Invalid username or password" });
     }
 
     req.session.user = { _id: user._id, username: user.username };
     console.log("✅ User Logged In:", req.session.user);
 
-    res.json({ user: req.session.user });
+    // ✅ Force session save to persist login
+    req.session.save((err) => {
+      if (err) {
+        console.error("❌ Session Save Error:", err);
+        return res.status(500).json({ error: "Session save failed." });
+      }
+      res.json({ user: req.session.user });
+    });
   } catch (error) {
     console.error("❌ Login Error:", error);
     res.status(500).json({ error: "Login failed." });
   }
 });
+
 
 // ✅ Check session after login
 app.get("/me", (req, res) => {
