@@ -36,14 +36,12 @@ app.use(
     saveUninitialized: false,
     store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
     cookie: {
-      secure: process.env.NODE_ENV === "production", // ✅ Secure in prod, not local
+      secure: process.env.NODE_ENV === "production", // ✅ Secure cookies in production
       sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax", // ✅ Fix cross-origin issues
       httpOnly: true,
     },
   })
 );
-
-
 
 // ✅ **MongoDB Connection**
 mongoose
