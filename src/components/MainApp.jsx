@@ -37,15 +37,18 @@ export default function MainApp({ user, setUser, onLogout }) {
     if (!user) return;
     setLoadingHistory(true);
     try {
+      console.log("📌 Fetching History...");
       const response = await axiosInstance.get("/summaries");
+      console.log("✅ History Response:", response.data);
       setHistory(response.data);
     } catch (err) {
-      console.error("❌ History Fetch Error:", err);
+      console.error("❌ History Fetch Error:", err.response?.data || err.message);
       setError("Failed to load history.");
     } finally {
       setLoadingHistory(false);
     }
   };
+  
 
   useEffect(() => {
     if (user) fetchHistory();
@@ -72,22 +75,26 @@ export default function MainApp({ user, setUser, onLogout }) {
     if (!text) return setError("Please enter text to summarize.");
     if (text.length > MAX_CHARACTERS)
       return setError(`Text exceeds ${MAX_CHARACTERS} characters.`);
-
+  
     setLoadingSummary(true);
     setError("");
-
+  
     try {
+      console.log("📌 Sending Summarization Request...");
       const response = await axiosInstance.post("/summarize", { text });
+      console.log("✅ Summarization Response:", response.data);
+  
       setSummary(response.data.summary);
       setQuestions([]);
-      await fetchHistory();
+      await fetchHistory(); // ✅ Update history after summarization
     } catch (err) {
-      console.error("❌ Summary Error:", err);
+      console.error("❌ Summary Error:", err.response?.data || err.message);
       setError("Failed to summarize. Try again.");
     } finally {
       setLoadingSummary(false);
     }
   };
+  
 
   // ✅ Upload PDF
   const handleFileUpload = async (event) => {
