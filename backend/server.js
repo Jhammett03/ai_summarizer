@@ -17,12 +17,13 @@ const PORT = process.env.PORT || 5000;
 // ✅ **Fix CORS to Allow Cross-Origin Cookies**
 app.use(
   cors({
-    origin: "https://tourmaline-quokka-f411ff.netlify.app", // ✅ Update with Netlify frontend URL
-    credentials: true, // ✅ Allow sending cookies
-    methods: ["GET", "POST", "PUT", "DELETE"], // ✅ Allowed HTTP methods
-    allowedHeaders: ["Content-Type", "Authorization"], // ✅ Allow necessary headers
+    origin: "https://tourmaline-quokka-f411ff.netlify.app", // ✅ Your frontend URL
+    credentials: true, // ✅ Allow cookies
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
 
 // ✅ **Body Parser Middleware**
 app.use(bodyParser.json());
@@ -31,16 +32,17 @@ app.use(bodyParser.json());
 app.use(
   session({
     secret: process.env.SECRET_KEY || "your-secret-key",
-    resave: true,
+    resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }), // ✅ Store sessions in MongoDB
+    store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
     cookie: {
-      secure: true, // ✅ Required for HTTPS
-      httpOnly: true, // ✅ Prevents frontend JS from accessing cookies
-      sameSite: "None", // ✅ Allows cross-origin requests
+      secure: true, // ✅ Must be `true` in production (HTTPS required)
+      sameSite: "None", // ✅ Required for cross-origin cookies
+      httpOnly: true, // ✅ Prevents client-side access
     },
   })
 );
+
 
 // ✅ **MongoDB Connection**
 mongoose

@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import axios from "axios";
+import axiosInstance from "./api"; // ✅ Import the Axios instance
 import Navbar from "./Navbar";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function MainApp({ user, setUser, onLogout }) {
   const [text, setText] = useState("");
@@ -25,7 +23,7 @@ export default function MainApp({ user, setUser, onLogout }) {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const response = await axios.get(`${API_URL}/me`, { withCredentials: true });
+        const response = await axiosInstance.get("/me");
         setUser(response.data.user);
       } catch (err) {
         console.error("❌ No session found:", err.response?.data?.error || err.message);
@@ -37,10 +35,9 @@ export default function MainApp({ user, setUser, onLogout }) {
   // ✅ Fetch past summaries for the logged-in user
   const fetchHistory = async () => {
     if (!user) return;
-
     setLoadingHistory(true);
     try {
-      const response = await axios.get(`${API_URL}/summaries`, { withCredentials: true });
+      const response = await axiosInstance.get("/summaries");
       setHistory(response.data);
     } catch (err) {
       console.error("❌ History Fetch Error:", err);
@@ -57,7 +54,7 @@ export default function MainApp({ user, setUser, onLogout }) {
   // ✅ Delete a saved summary
   const handleDeleteSummary = async (id) => {
     try {
-      await axios.delete(`${API_URL}/summaries/${id}`, { withCredentials: true });
+      await axiosInstance.delete(`/summaries/${id}`);
       setHistory(history.filter((entry) => entry._id !== id));
     } catch (err) {
       console.error("❌ Delete Summary Error:", err);
@@ -80,15 +77,10 @@ export default function MainApp({ user, setUser, onLogout }) {
     setError("");
 
     try {
-      const response = await axios.post(
-        `${API_URL}/summarize`,
-        { text },
-        { withCredentials: true }
-      );
-
+      const response = await axiosInstance.post("/summarize", { text });
       setSummary(response.data.summary);
       setQuestions([]);
-      await fetchHistory(); // ✅ Update history after summarizing
+      await fetchHistory();
     } catch (err) {
       console.error("❌ Summary Error:", err);
       setError("Failed to summarize. Try again.");
@@ -107,9 +99,8 @@ export default function MainApp({ user, setUser, onLogout }) {
       formData.append("pdf", selectedFile);
 
       try {
-        const response = await axios.post(`${API_URL}/upload`, formData, {
+        const response = await axiosInstance.post("/upload", formData, {
           headers: { "Content-Type": "multipart/form-data" },
-          withCredentials: true,
         });
 
         setText(response.data.text);
@@ -128,11 +119,10 @@ export default function MainApp({ user, setUser, onLogout }) {
     setError("");
 
     try {
-      const response = await axios.post(
-        `${API_URL}/generate-questions`,
-        { summaryId: history[0]?._id, summary },
-        { withCredentials: true }
-      );
+      const response = await axiosInstance.post("/generate-questions", {
+        summaryId: history[0]?._id,
+        summary,
+      });
 
       if (!response.data.questions || response.data.questions.length === 0) {
         throw new Error("No questions returned from server");
