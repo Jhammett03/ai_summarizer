@@ -183,7 +183,7 @@ export default function MainApp({ user, setUser, onLogout }) {
             type="file"
             accept="application/pdf"
             onChange={handleFileUpload}
-            className="mb-4 p-2 border border-gray-300 dark:border-gray-600 rounded-md w-full"
+            className="mb-4 p-2 border border-gray-300 dark:border-gray-600 rounded-md w-full text-white"
           />
 
           {/* ✅ Text Area */}
