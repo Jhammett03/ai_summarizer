@@ -36,12 +36,13 @@ app.use(
     saveUninitialized: false,
     store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
     cookie: {
-      secure: "auto", // ✅ Allows cookies in local & deployed environments
-      sameSite: "Lax", // ✅ Fixes cross-origin cookie issues
+      secure: process.env.NODE_ENV === "production", // ✅ Secure in prod, not local
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax", // ✅ Fix cross-origin issues
       httpOnly: true,
-    },    
+    },
   })
 );
+
 
 
 // ✅ **MongoDB Connection**
@@ -89,8 +90,6 @@ app.post("/register", async (req, res) => {
 
 // ✅ **User Login (Ensures Session Persists)**
 app.post("/login", async (req, res) => {
-  console.log("🔍 Login Request Body:", req.body);
-
   try {
     const { username, password } = req.body;
     const user = await User.findOne({ username });
@@ -100,9 +99,8 @@ app.post("/login", async (req, res) => {
     }
 
     req.session.user = { _id: user._id, username: user.username };
-    console.log("✅ User Logged In:", req.session.user);
+    console.log("✅ User Logged In:", req.session.user); // Debugging
 
-    // ✅ Force session save to persist login
     req.session.save((err) => {
       if (err) {
         console.error("❌ Session Save Error:", err);
@@ -111,22 +109,30 @@ app.post("/login", async (req, res) => {
       res.json({ user: req.session.user });
     });
   } catch (error) {
-    console.error("❌ Login Error:", error);
     res.status(500).json({ error: "Login failed." });
   }
 });
 
 
-// ✅ Check session after login
-app.get("/me", (req, res) => {
-  console.log("📌 Checking Session:", req.session);
 
-  if (!req.session.user) {
+// ✅ Check session after login
+app.get("/me", async (req, res) => {
+  console.log("📌 Checking Session:", req.session);
+  
+  if (!req.session || !req.session.user) {
     return res.status(401).json({ error: "Not authenticated" });
   }
 
-  res.json({ user: req.session.user });
+  try {
+    // Fetch the user from the session store
+    const sessionUser = req.session.user;
+    return res.json({ user: sessionUser });
+  } catch (error) {
+    console.error("❌ Session Retrieval Error:", error);
+    return res.status(500).json({ error: "Server error retrieving session" });
+  }
 });
+
 
 
 // ✅ **User Logout**
