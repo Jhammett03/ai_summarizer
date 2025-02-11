@@ -36,10 +36,10 @@ app.use(
     saveUninitialized: false,
     store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
     cookie: {
-      secure: true, // ✅ Must be `true` in production (HTTPS required)
-      sameSite: "None", // ✅ Required for cross-origin cookies
-      httpOnly: true, // ✅ Prevents client-side access
-    },
+      secure: "auto", // ✅ Allows cookies in local & deployed environments
+      sameSite: "Lax", // ✅ Fixes cross-origin cookie issues
+      httpOnly: true,
+    },    
   })
 );
 
