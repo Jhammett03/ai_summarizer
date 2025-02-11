@@ -15,51 +15,25 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // ✅ Middleware
-const allowedOrigins = [
-  "https://tourmaline-quokka-f411ff.netlify.app", // ✅ Netlify frontend
-  "http://localhost:5173" // ✅ Local development
-];
-
 app.use(
   cors({
-    origin: allowedOrigins,
-    credentials: true, // 🔹 Allows sending session cookies
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    origin: "https://tourmaline-quokka-f411ff.netlify.app", // Update with your Netlify domain
+    credentials: true, // ✅ Allow cookies
   })
 );
+
 app.use(bodyParser.json());
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "supersecuresecret",
+    secret: process.env.SECRET_KEY || "your-secret-key",
     resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({
-      mongoUrl: process.env.MONGO_URI, // ✅ Use your MongoDB connection string
-      collectionName: "sessions", // Optional: customize collection name
-      ttl: 24 * 60 * 60, // Optional: session expiration in seconds (1 day)
-    }),
+    store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
     cookie: {
-      secure: true, // ✅ Set to `true` in production (false for local development)
+      secure: true, // Only works with HTTPS
+      sameSite: "none", // Important for cross-origin requests
       httpOnly: true,
-      sameSite: "None", // ✅ Required for cross-origin cookies
     },
-  })
-);
-
-
-
-// ✅ Enable sessions
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "your-secret",
-    resave: false,
-    saveUninitialized: false,
-    store: MongoStore.create({
-      mongoUrl: process.env.MONGO_URI, // Use your MongoDB connection string
-      collectionName: "sessions", // Name of the session collection
-    }),
-    cookie: { secure: false, httpOnly: true }, // Set secure: true for HTTPS
   })
 );
 
@@ -186,17 +160,14 @@ app.post("/upload", upload.single("pdf"), async (req, res) => {
 });
 
 // ✅ Fetch User's Summaries
-app.get("/summaries", async (req, res) => {
-  const userId = req.session.user?._id;
-  if (!userId) return res.status(401).json({ error: "Not authenticated" });
-
-  try {
-    const summaries = await Summary.find({ userId }).sort({ createdAt: -1 });
-    res.json(summaries);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch summaries." });
+app.get("/summaries", (req, res) => {
+  console.log("Session Data:", req.session); // ✅ Debug
+  if (!req.session.user) {
+    return res.status(401).json({ error: "Not authenticated" });
   }
+  res.json({ summaries: [] });
 });
+
 
 // ✅ Delete a Summary
 app.delete("/summaries/:id", async (req, res) => {
