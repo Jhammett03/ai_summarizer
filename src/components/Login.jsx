@@ -20,17 +20,15 @@ export default function LoginPage({ handleLogin }) {
     try {
       let response;
       if (isRegistering) {
-        // ✅ Register user
         response = await axiosInstance.post("/register", { username, password });
         console.log("✅ Registration Successful:", response.data);
         alert("Account created! You can now log in.");
-        setIsRegistering(false); // ✅ Switch to login mode
+        setIsRegistering(false);
       } else {
-        // ✅ Log in user
         response = await axiosInstance.post("/login", { username, password });
         console.log("✅ Login Successful:", response.data);
-        
-        // ✅ Persist user session after login
+
+        // ✅ Check session after login to persist authentication
         const sessionRes = await axiosInstance.get("/me");
         handleLogin(sessionRes.data.user);
       }
@@ -42,7 +40,6 @@ export default function LoginPage({ handleLogin }) {
 
   return (
     <div className={`${darkMode ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"} min-h-screen flex flex-col`}>
-      {/* ✅ Navbar with dark mode support */}
       <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
 
       <div className="flex flex-col items-center justify-center flex-grow">
