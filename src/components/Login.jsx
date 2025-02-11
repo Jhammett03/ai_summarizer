@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axiosInstance from "./api"; // ✅ Import Axios instance
+import axiosInstance from "./api"; // ✅ Use Axios instance
 import Navbar from "./Navbar";
 
 export default function LoginPage({ handleLogin }) {
@@ -20,17 +20,27 @@ export default function LoginPage({ handleLogin }) {
     try {
       let response;
       if (isRegistering) {
+        // ✅ Register
         response = await axiosInstance.post("/register", { username, password });
         console.log("✅ Registration Successful:", response.data);
         alert("Account created! You can now log in.");
         setIsRegistering(false);
       } else {
+        // ✅ Login
         response = await axiosInstance.post("/login", { username, password });
         console.log("✅ Login Successful:", response.data);
 
-        // ✅ Check session after login to persist authentication
-        const sessionRes = await axiosInstance.get("/me");
-        handleLogin(sessionRes.data.user);
+        // ✅ Check session **after login** to verify the cookie is set
+        setTimeout(async () => {
+          try {
+            const sessionRes = await axiosInstance.get("/me");
+            console.log("✅ Session Check After Login:", sessionRes.data);
+            handleLogin(sessionRes.data.user);
+          } catch (sessionErr) {
+            console.error("❌ Session Not Found After Login:", sessionErr.response?.data || sessionErr.message);
+            setError("Session issue. Try refreshing.");
+          }
+        }, 500); // ✅ Delay to ensure session cookie is stored
       }
     } catch (err) {
       console.error("❌ Auth Error:", err.response?.data || err.message);
