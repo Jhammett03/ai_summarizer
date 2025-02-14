@@ -6,7 +6,7 @@ export default function Navbar({ darkMode, toggleDarkMode, onLogout, user, showH
       <h1 className="text-lg font-bold">AI Summarizer</h1>
 
       <div className="flex items-center space-x-4">
-        {/* ✅ Show History Button */}
+        {/* Show History Button */}
         {user && (
         <button
           onClick={() => setShowHistory(!showHistory)}
@@ -15,7 +15,7 @@ export default function Navbar({ darkMode, toggleDarkMode, onLogout, user, showH
           {showHistory ? "📂 Close History" : "📂 Show History"}
         </button>)}
 
-        {/* ✅ Dark Mode Toggle */}
+        {/* Dark Mode Toggle */}
         <button
           onClick={toggleDarkMode}
           className="bg-gray-700 px-3 py-1 rounded hover:bg-gray-600 transition"
@@ -23,7 +23,7 @@ export default function Navbar({ darkMode, toggleDarkMode, onLogout, user, showH
           {darkMode ? "🌙 Dark" : "☀️ Light"}
         </button>
 
-        {/* ✅ Show Logout Button Only If Logged In */}
+        {/* Show Logout Button Only If Logged In */}
         {user && (
           <button
             onClick={onLogout}

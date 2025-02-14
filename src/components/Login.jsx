@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axiosInstance from "./api"; // ✅ Use Axios instance
+import axiosInstance from "./api"; 
 import Navbar from "./Navbar";
 
 export default function LoginPage({ handleLogin }) {
@@ -8,7 +8,7 @@ export default function LoginPage({ handleLogin }) {
   const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState("");
   const [darkMode, setDarkMode] = useState(true);
-  const [showLogin, setShowLogin] = useState(false); // ✅ Controls splash/login screen
+  const [showLogin, setShowLogin] = useState(false); 
 
   const toggleDarkMode = () => setDarkMode(!darkMode);
 
@@ -16,22 +16,22 @@ export default function LoginPage({ handleLogin }) {
     e.preventDefault();
     setError("");
 
-    console.log("🛠️ Sending Auth Data:", { username, password, isRegistering });
+    console.log("🛠️ Sending Auth Data:", { username, isRegistering });
 
     try {
       let response;
       if (isRegistering) {
-        // ✅ Register
+        // Register
         response = await axiosInstance.post("/register", { username, password });
         console.log("✅ Registration Successful:", response.data);
         alert("Account created! You can now log in.");
         setIsRegistering(false);
       } else {
-        // ✅ Login
+        // Login
         response = await axiosInstance.post("/login", { username, password });
         console.log("✅ Login Successful:", response.data);
 
-        // ✅ Check session **after login** to verify the cookie is set
+        // Check session **after login** to verify the cookie is set
         setTimeout(async () => {
           try {
             const sessionRes = await axiosInstance.get("/me");
@@ -41,7 +41,7 @@ export default function LoginPage({ handleLogin }) {
             console.error("❌ Session Not Found After Login:", sessionErr.response?.data || sessionErr.message);
             setError("Session issue. Try refreshing.");
           }
-        }, 500); // ✅ Delay to ensure session cookie is stored
+        }, 500); // Delay to ensure session cookie is stored
       }
     } catch (err) {
       console.error("❌ Auth Error:", err.response?.data || err.message);
@@ -96,7 +96,7 @@ export default function LoginPage({ handleLogin }) {
             </button>
           </div>
         ) : (
-          // ✅ Splash Page
+          // Splash Page
           <div className="text-center p-12">
             <h1 className="text-5xl font-bold">Welcome to AI Summarizer</h1>
             <p className="text-lg mt-4 max-w-lg mx-auto">

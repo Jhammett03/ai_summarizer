@@ -15,7 +15,7 @@ const app = express();
 const PORT = process.env.PORT;
 const ORIGIN = process.env.ORIGIN;
 
-// ✅ **Fix CORS to Allow Cross-Origin Cookies**
+//CORS Allows cross origin cookies
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -25,7 +25,7 @@ app.use(
         callback(new Error("Not allowed by CORS"));
       }
     },
-    credentials: true, // ✅ Allows session cookies
+    credentials: true, // Allows session cookies
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
@@ -33,11 +33,11 @@ app.use(
 app.options("*", cors());
 
 
-// ✅ **Body Parser Middleware**
+//  **Body Parser Middleware**
 app.use(bodyParser.json());
 
-// ✅ **Session Configuration (Persists User Login)**
-app.set("trust proxy", 1); // ✅ Required for Render & local development
+// **Session Configuration (Persists User Login)**
+app.set("trust proxy", 1); // Required for Render & local development
 
 app.use(
   session({
@@ -46,8 +46,8 @@ app.use(
     saveUninitialized: false,
     store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
     cookie: {
-      secure: process.env.NODE_ENV === "production", // ✅ Secure only in production
-      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax", // ✅ Allows local cross-origin requests
+      secure: process.env.NODE_ENV === "production", // Secure only in production
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax", // Allows local cross-origin requests
       httpOnly: true,
     },
   })
@@ -56,13 +56,13 @@ app.use(
 
 
 
-// ✅ **MongoDB Connection**
+// **MongoDB Connection**
 mongoose
   .connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 5000 })
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
-// ✅ **Define Summary Schema**
+// **Define Summary Schema**
 const SummarySchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   filename: String,
@@ -73,10 +73,10 @@ const SummarySchema = new mongoose.Schema({
 });
 const Summary = mongoose.model("Summary", SummarySchema);
 
-// ✅ **Initialize OpenAI API**
+// **Initialize OpenAI API**
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// ✅ **User Registration**
+// **User Registration**
 app.post("/register", async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -99,7 +99,7 @@ app.post("/register", async (req, res) => {
   }
 });
 
-// ✅ **User Login (Ensures Session Persists)**
+// **User Login (Ensures Session Persists)**
 app.post("/login", async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -109,10 +109,10 @@ app.post("/login", async (req, res) => {
       return res.status(400).json({ error: "Invalid username or password" });
     }
 
-    // ✅ Explicitly store user data in session
+    // Explicitly store user data in session
     req.session.user = { _id: user._id, username: user.username };
 
-    // ✅ Manually save the session to ensure it persists
+    // Manually save the session to ensure it persists
     req.session.save((err) => {
       if (err) {
         console.error("❌ Session Save Error:", err);
@@ -128,7 +128,7 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// ✅ Check session after login
+// Check session after login
 app.get("/me", async (req, res) => {
   console.log("📌 Checking Session:", req.session);
   
@@ -147,12 +147,12 @@ app.get("/me", async (req, res) => {
   }
 });
 
-// ✅ **User Logout**
+// **User Logout**
 app.post("/logout", (req, res) => {
   req.session.destroy(() => res.json({ message: "Logged out successfully" }));
 });
 
-// ✅ **Summarization**
+// **Summarization**
 app.post("/summarize", async (req, res) => {
   const { text } = req.body;
   const userId = req.session.user?._id;
@@ -182,7 +182,7 @@ app.post("/summarize", async (req, res) => {
   }
 });
 
-// ✅ **Fetch User's Summaries**
+// **Fetch User's Summaries**
 app.get("/summaries", async (req, res) => {
   console.log("📌 Checking Session:", req.session);
   if (!req.session.user) {
@@ -192,7 +192,7 @@ app.get("/summaries", async (req, res) => {
   res.json(summaries);
 });
 
-// ✅ **PDF Upload**
+// **PDF Upload**
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
@@ -213,7 +213,7 @@ app.post("/upload", upload.single("pdf"), async (req, res) => {
   }
 });
 
-// ✅ Generate Practice Questions Route
+// Generate Practice Questions Route
 app.post("/generate-questions", async (req, res) => {
   const { summaryId, summary } = req.body;
   const userId = req.session.user?._id;
@@ -239,7 +239,7 @@ app.post("/generate-questions", async (req, res) => {
 
     if (questions.length === 0) throw new Error("No valid questions extracted");
 
-    // ✅ Update summary with generated questions
+    // Update summary with generated questions
     await Summary.findByIdAndUpdate(summaryId, { questions });
 
     res.json({ questions });
@@ -249,7 +249,7 @@ app.post("/generate-questions", async (req, res) => {
   }
 });
 
-// ✅ Delete a Summary
+// Delete a Summary
 app.delete("/summaries/:id", async (req, res) => {
   const userId = req.session.user?._id;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
@@ -263,5 +263,5 @@ app.delete("/summaries/:id", async (req, res) => {
   }
 });
 
-// ✅ **Start Server**
+// **Start Server**
 app.listen(PORT, () => console.log(`🔥 Server running on http://localhost:${PORT}`));

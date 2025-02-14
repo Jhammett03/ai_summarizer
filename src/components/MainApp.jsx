@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import axiosInstance from "./api"; // ✅ Import the Axios instance
+import axiosInstance from "./api"; 
 import Navbar from "./Navbar";
 
 export default function MainApp({ user, setUser, onLogout }) {
@@ -19,7 +19,7 @@ export default function MainApp({ user, setUser, onLogout }) {
   const toggleDarkMode = () => setDarkMode(!darkMode);
   const MAX_CHARACTERS = 12000;
 
-  // ✅ Check session on first load (persists login)
+  // Check session on first load (persists login)
   useEffect(() => {
     const checkSession = async () => {
       try {
@@ -40,7 +40,7 @@ export default function MainApp({ user, setUser, onLogout }) {
   }, []);
   
 
-  // ✅ Fetch past summaries for the logged-in user
+  // Fetch past summaries for the logged-in user
   const fetchHistory = async () => {
     if (!user) return;
     setLoadingHistory(true);
@@ -62,7 +62,7 @@ export default function MainApp({ user, setUser, onLogout }) {
     if (user) fetchHistory();
   }, [user]);
 
-  // ✅ Delete a saved summary
+  // Delete a saved summary
   const handleDeleteSummary = async (id) => {
     try {
       await axiosInstance.delete(`/summaries/${id}`);
@@ -78,7 +78,7 @@ export default function MainApp({ user, setUser, onLogout }) {
     setQuestions(entry.questions || []);
   };
 
-  // ✅ Summarize text and save to MongoDB
+  // Summarize text and save to MongoDB
   const handleSummarize = async () => {
     if (!text) return setError("Please enter text to summarize.");
     if (text.length > MAX_CHARACTERS)
@@ -94,7 +94,7 @@ export default function MainApp({ user, setUser, onLogout }) {
   
       setSummary(response.data.summary);
       setQuestions([]);
-      await fetchHistory(); // ✅ Update history after summarization
+      await fetchHistory(); // Update history after summarization
     } catch (err) {
       console.error("❌ Summary Error:", err.response?.data || err.message);
       setError("Failed to summarize. Try again.");
@@ -104,7 +104,7 @@ export default function MainApp({ user, setUser, onLogout }) {
   };
   
 
-  // ✅ Upload PDF
+  // Upload PDF
   const handleFileUpload = async (event) => {
     const selectedFile = event.target.files[0];
     setFile(selectedFile);
@@ -126,7 +126,7 @@ export default function MainApp({ user, setUser, onLogout }) {
     }
   };
 
-  // ✅ Generate Questions and save them to MongoDB
+  // Generate Questions and save them to MongoDB
   const handleGenerateQuestions = async () => {
     if (!summary) return setError("Summarize first before generating questions.");
 
@@ -145,7 +145,7 @@ export default function MainApp({ user, setUser, onLogout }) {
 
       setQuestions(response.data.questions);
 
-      // ✅ Update history to reflect the new questions
+      // Update history to reflect the new questions
       setHistory(history.map(entry => 
         entry._id === history[0]?._id ? { ...entry, questions: response.data.questions } : entry
       ));
@@ -177,7 +177,7 @@ export default function MainApp({ user, setUser, onLogout }) {
       <div className="flex flex-col items-center justify-center w-full pt-20 p-20">
         <h1 className="text-4xl font-bold p-10">AI Summarizer</h1>
 
-        {/* ✅ File Upload */}
+        {/* File Upload */}
         <motion.div className="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
           <input
             type="file"
@@ -186,7 +186,7 @@ export default function MainApp({ user, setUser, onLogout }) {
             className="mb-4 p-2 border border-gray-300 dark:border-gray-600 rounded-md w-full text-white"
           />
 
-          {/* ✅ Text Area */}
+          {/* Text Area */}
           <textarea
             className="w-full h-40 p-4 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md"
             placeholder="Paste your text here..."
@@ -196,7 +196,7 @@ export default function MainApp({ user, setUser, onLogout }) {
 
           {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
 
-          {/* ✅ Summarize Button */}
+          {/* Summarize Button */}
           <button
             className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg mt-4"
             onClick={handleSummarize}
@@ -206,13 +206,13 @@ export default function MainApp({ user, setUser, onLogout }) {
           </button>
         </motion.div>
 
-        {/* ✅ Summary Output */}
+        {/* Summary Output */}
         {summary && (
           <motion.div className="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mt-6">
             <h2 className="text-xl font-semibold mb-2">Summary:</h2>
             <p>{summary}</p>
 
-            {/* ✅ Generate Questions Button */}
+            {/* Generate Questions Button */}
             <button
               className="mt-4 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600"
               onClick={handleGenerateQuestions}
@@ -235,7 +235,7 @@ export default function MainApp({ user, setUser, onLogout }) {
           )}
       </div>
 
-      {/* ✅ Collapsible Right Sidebar */}
+      {/* Collapsible Right Sidebar */}
       <div
         className={`fixed top-0 right-0 h-full bg-gray-800 w-72 p-4 transition-transform duration-300 z-50 shadow-lg ${
           showHistory ? "translate-x-0" : "translate-x-full"
