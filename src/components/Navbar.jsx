@@ -7,12 +7,13 @@ export default function Navbar({ darkMode, toggleDarkMode, onLogout, user, showH
 
       <div className="flex items-center space-x-4">
         {/* ✅ Show History Button */}
+        {user && (
         <button
           onClick={() => setShowHistory(!showHistory)}
           className="bg-blue-500 px-3 py-1 rounded hover:bg-blue-600 transition"
         >
           {showHistory ? "📂 Close History" : "📂 Show History"}
-        </button>
+        </button>)}
 
         {/* ✅ Dark Mode Toggle */}
         <button

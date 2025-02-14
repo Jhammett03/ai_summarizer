@@ -53,6 +53,7 @@ export default function LoginPage({ handleLogin }) {
       <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
 
       <div className="flex flex-col items-center justify-center flex-grow">
+      <h1 className="text-4xl font-bold p-12">AI Summarizer</h1>
         <div className="bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full">
           <h2 className="text-2xl font-bold text-white">{isRegistering ? "Sign Up" : "Log In"}</h2>
 
