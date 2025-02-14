@@ -8,6 +8,7 @@ export default function LoginPage({ handleLogin }) {
   const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState("");
   const [darkMode, setDarkMode] = useState(true);
+  const [showLogin, setShowLogin] = useState(false); // ✅ Controls splash/login screen
 
   const toggleDarkMode = () => setDarkMode(!darkMode);
 
@@ -53,46 +54,62 @@ export default function LoginPage({ handleLogin }) {
       <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
 
       <div className="flex flex-col items-center justify-center flex-grow">
-      <h1 className="text-4xl font-bold p-12">AI Summarizer</h1>
-        <div className="bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full">
-          <h2 className="text-2xl font-bold text-white">{isRegistering ? "Sign Up" : "Log In"}</h2>
+        {showLogin ? (
+          // ✅ Login Page
+          <div className="bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full">
+            <h2 className="text-2xl font-bold text-white">{isRegistering ? "Sign Up" : "Log In"}</h2>
 
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+            {error && <p className="text-red-500 text-sm">{error}</p>}
 
-          <form onSubmit={handleSubmit} className="mt-4 text-gray-800">
-            <input
-              type="text"
-              placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700"
-              required
-            />
+            <form onSubmit={handleSubmit} className="mt-4 text-gray-800">
+              <input
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700"
+                required
+              />
 
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700 mt-2"
-              required
-            />
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700 mt-2"
+                required
+              />
+
+              <button
+                type="submit"
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg mt-4"
+              >
+                {isRegistering ? "Sign Up" : "Log In"}
+              </button>
+            </form>
 
             <button
-              type="submit"
-              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg mt-4"
+              className="text-blue-500 mt-4"
+              onClick={() => setIsRegistering(!isRegistering)}
             >
-              {isRegistering ? "Sign Up" : "Log In"}
+              {isRegistering ? "Already have an account? Log in" : "Don't have an account? Sign up"}
             </button>
-          </form>
-
-          <button
-            className="text-blue-500 mt-4"
-            onClick={() => setIsRegistering(!isRegistering)}
-          >
-            {isRegistering ? "Already have an account? Log in" : "Don't have an account? Sign up"}
-          </button>
-        </div>
+          </div>
+        ) : (
+          // ✅ Splash Page
+          <div className="text-center p-12">
+            <h1 className="text-5xl font-bold">Welcome to AI Summarizer</h1>
+            <p className="text-lg mt-4 max-w-lg mx-auto">
+              Easily summarize text, analyze content, and generate insights with AI-powered tools.
+            </p>
+            <button
+              onClick={() => setShowLogin(true)}
+              className="mt-6 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg text-lg"
+            >
+              Get Started
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
