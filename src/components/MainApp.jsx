@@ -178,7 +178,7 @@ export default function MainApp({ user, setUser, onLogout }) {
         <h1 className="text-4xl font-bold p-10">AI Summarizer</h1>
 
         {/* File Upload */}
-        <motion.div className="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <motion.div className="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 select-none">
           <input
             type="file"
             accept="application/pdf"
