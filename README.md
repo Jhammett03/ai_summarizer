@@ -2,6 +2,9 @@
 
 An AI-powered summarization and question-generation tool that extracts key information from text and PDFs.
 
+## Important Note
+- I am hosting the application using a free version of Render which spins down significantly with low usage. If the page appears not to be loading, please be patient and it should load after a bit.
+---
 
 ## 🚀 Features
 
